@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -12,6 +13,8 @@ func getLogs(c *gin.Context) {
 
 func main() {
 	router := gin.Default()
+	router.Use(cors.Default())
+
 	router.GET("/logs", getLogs)
 
 	router.Run("localhost:8081")
