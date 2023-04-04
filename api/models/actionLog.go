@@ -7,6 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type ActionLog struct {
@@ -27,11 +28,15 @@ type ActionLog struct {
 	Tags       []string           `bson:"tags"`
 }
 
+// Renvoie un slice avec toutes les actions, dans l'ordre chronologique inverse (plus récentes en premier)
 func GetLogs(ctx context.Context) (result []ActionLog, err error) {
 	result = make([]ActionLog, 0)
 	var data *mongo.Cursor
 
-	data, err = config.DB.Collection("actionLog").Find(ctx, bson.D{})
+	filter := bson.D{}
+	opts := options.Find().SetSort(bson.D{{Key: "dateAction", Value: -1}, {Key: "legume", Value: 1}})
+
+	data, err = config.DB.Collection("actionLog").Find(ctx, filter, opts)
 	if err != nil {
 		return nil, err
 	}

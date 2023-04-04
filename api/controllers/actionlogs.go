@@ -31,7 +31,7 @@ func PostLogs(c *gin.Context) {
 	var logActions []models.ActionLog
 	var err error
 
-	ctx, cancel := context.WithTimeout(context.Background(), 180*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	if err = c.BindJSON(&postedDTO); err != nil {
@@ -48,10 +48,14 @@ func PostLogs(c *gin.Context) {
 		}
 		logActions = append(logActions, a)
 	}
-	var newLogs, updatedLogs = 0, 0
-	newLogs, updatedLogs, err = models.SaveLogs(ctx, logActions)
+	var updatedLogs = 0
+	updatedLogs, err = models.SaveLogs(ctx, logActions)
+	if err != nil {
+		c.IndentedJSON(http.StatusNotAcceptable, err)
+		return
+	}
 
-	c.IndentedJSON(http.StatusCreated, fmt.Sprintf("{new: %d , updated: %d}", newLogs, updatedLogs))
+	c.IndentedJSON(http.StatusCreated, fmt.Sprintf("{updated: %d}", updatedLogs))
 }
 
 func dtoToActionLog(d dto.ActionLogDTO) (a models.ActionLog, err error) {
