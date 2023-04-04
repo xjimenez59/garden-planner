@@ -12,7 +12,12 @@ GET /logs?from=<yyyymmdd>&to=<yyyymmdd>
       Renvoie les actions planifiées ou effectuées entre les deux bornes,
 
 POST /log
-      Ajoute une nouvelle action
+      Importe une liste d'actions.
+      Les actions référencées par un ID sont mises à jour ;
+      Referentiels :
+      - si une valeur de referentiel n'a pas d'id correspondant, on cree le referentiel
+      - 
+
 PUT  /log/<logID>
       Modifie l'action correspondante
 GET  /log/<logID>

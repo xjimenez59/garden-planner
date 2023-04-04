@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+  mongo:
+    image: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: zorglub
+      MONGO_INITDB_DATABASE: garden-planner
+    ports:
+      - "27017:27017"
+    volumes: 
+      - type: volume
+        source: garden-planner-volume
+        target: /data/db
+
+volumes:
+  garden-planner-volume:

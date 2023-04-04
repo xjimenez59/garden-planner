@@ -1,21 +1,24 @@
 package main
 
 import (
-	"net/http"
-
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+
+	"garden-planner/api/config"
+	"garden-planner/api/controllers"
 )
 
-func getLogs(c *gin.Context) {
-	c.IndentedJSON(http.StatusOK, actionLogDemoData)
-}
-
 func main() {
+
+	config.ConnectDatabase()
+
 	router := gin.Default()
 	router.Use(cors.Default())
 
-	router.GET("/logs", getLogs)
+	router.GET("/logs", controllers.GetLogs)
+	router.POST("/logs", controllers.PostLogs)
+
+	router.GET("/gardens", controllers.GetGardens)
 
 	router.Run("localhost:8081")
 }
