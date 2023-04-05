@@ -19,6 +19,7 @@ func main() {
 	router.POST("/logs", controllers.PostLogs)
 
 	router.GET("/gardens", controllers.GetGardens)
+	router.GET("/legumes", controllers.GetLegumes)
 
 	router.Run("localhost:8081")
 }
