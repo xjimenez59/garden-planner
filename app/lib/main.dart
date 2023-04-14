@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'action_log.dart';
 import 'api_service.dart';
+import 'home.dart';
 
 void main() {
   runApp(const MyApp());
@@ -86,29 +87,30 @@ class _MyHomePageState extends State<MyHomePage> {
               : ListView.builder(
                   itemCount: actionLogs!.length,
                   itemBuilder: (context, index) {
-                    return Card(
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              Text(actionLogs![index].dateAction.toString()),
-                              Text(actionLogs![index].action),
-                            ],
-                          ),
-                          const SizedBox(
-                            height: 20.0,
-                          ),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              Text(actionLogs![index].legume),
-                              Text('( ${actionLogs![index].lot} )'),
-                            ],
-                          ),
-                        ],
-                      ),
-                    );
+                    List<Widget> results = [];
+                    var a = actionLogs![index];
+                    if (index == 0) {
+                      results.add(TopHomeFilter());
+                      results.add(DaySeparator(date: a.dateAction, icon: ""));
+                    } else {
+                      if (actionLogs![index - 1].dateAction != a.dateAction) {
+                        results.add(DaySeparator(date: a.dateAction, icon: ""));
+                      }
+                    }
+                    bool showDivider;
+                    if (index < actionLogs!.length - 1) {
+                      showDivider =
+                          (actionLogs![index + 1].dateAction == a.dateAction);
+                    } else {
+                      showDivider = true;
+                    }
+                    results.add(
+                        ActionListTile(actionLog: a, showDivider: showDivider));
+
+                    if (results.length > 1) {
+                      return Column(children: results);
+                    }
+                    return results.first;
                   },
                 ),
         ));

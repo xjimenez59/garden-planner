@@ -11,21 +11,21 @@ import (
 )
 
 type ActionLog struct {
-	ID         primitive.ObjectID `bson:"_id"`
-	ParentId   primitive.ObjectID `bson:"_parentId"`
-	Jardin     string             `bson:"jardin"`
-	DateAction primitive.DateTime `bson:"dateAction"`
-	Action     string             `bson:"action"`
-	Statut     string             `bson:"statut"`
-	Lieu       string             `bson:"lieu"`
-	Lot        string             `bson:"Lot"`
-	Legume     string             `bson:"legume"`
-	Variete    string             `bson:"variete"`
-	Qte        int                `bson:"qte"`
-	Poids      int                `bson:"poids"`
-	Notes      string             `bson:"notes"`
-	Photos     []string           `bson:"photos"`
-	Tags       []string           `bson:"tags"`
+	ID         primitive.ObjectID `json:"_id" bson:"_id"`
+	ParentId   primitive.ObjectID `json:"_parentId" bson:"_parentId"`
+	Jardin     string             `json:"jardin" bson:"jardin"`
+	DateAction primitive.DateTime `json:"dateAction" bson:"dateAction"`
+	Action     string             `json:"action" bson:"action"`
+	Statut     string             `json:"statut" bson:"statut"`
+	Lieu       string             `json:"lieu" bson:"lieu"`
+	Lot        string             `json:"lot" bson:"Lot"`
+	Legume     string             `json:"legume" bson:"legume"`
+	Variete    string             `json:"variete" bson:"variete"`
+	Qte        int                `json:"qte" bson:"qte"`
+	Poids      int                `json:"poids" bson:"poids"`
+	Notes      string             `json:"notes" bson:"notes"`
+	Photos     []string           `json:"photos" bson:"photos"`
+	Tags       []string           `json:"tags" bson:"tags"`
 }
 
 // Renvoie un slice avec toutes les actions, dans l'ordre chronologique inverse (plus récentes en premier)
