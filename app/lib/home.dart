@@ -5,6 +5,8 @@
 import 'package:app/action_log.dart';
 import 'package:flutter/material.dart';
 
+import 'api_service.dart';
+
 class DaySeparator extends StatelessWidget {
   final DateTime date;
   final String icon;
@@ -275,31 +277,33 @@ class ActionListTile extends StatelessWidget {
 
     Widget? tagLine = null;
     if (actionLog.tags.isNotEmpty) {
+      List<Widget> chips = [];
+      for (var tag in actionLog.tags) {
+        chips.add(Chip(
+          labelPadding: EdgeInsets.symmetric(vertical: 0, horizontal: 4),
+          label: Text(tag),
+          labelStyle: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w400,
+            fontStyle: FontStyle.normal,
+            color: Color.fromARGB(255, 0, 0, 0),
+          ),
+          backgroundColor: Color.fromARGB(255, 203, 247, 93),
+          elevation: 2,
+          shadowColor: Color(0xff808080),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16.0),
+          ),
+        ));
+      }
+
       tagLine = Padding(
         padding: EdgeInsets.fromLTRB(10, 5, 0, 0),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisSize: MainAxisSize.max,
-          children: [
-            Chip(
-              labelPadding: EdgeInsets.symmetric(vertical: 0, horizontal: 4),
-              label: Text("Cocopelli"),
-              labelStyle: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w400,
-                fontStyle: FontStyle.normal,
-                color: Color(0xffffffff),
-              ),
-              backgroundColor: Color(0xff728d5e),
-              elevation: 0,
-              shadowColor: Color(0xff808080),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16.0),
-              ),
-            ),
-          ],
-        ),
+            mainAxisAlignment: MainAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisSize: MainAxisSize.max,
+            children: chips),
       );
     }
 
@@ -369,5 +373,138 @@ class ActionListTile extends StatelessWidget {
     }
 
     return tile;
+  }
+}
+
+class MyHomePage extends StatefulWidget {
+  const MyHomePage({super.key, required this.title});
+
+  // This widget is the home page of your application. It is stateful, meaning
+  // that it has a State object (defined below) that contains fields that affect
+  // how it looks.
+
+  // This class is the configuration for the state. It holds the values (in this
+  // case the title) provided by the parent (in this case the App widget) and
+  // used by the build method of the State. Fields in a Widget subclass are
+  // always marked "final".
+
+  final String title;
+
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  late List<ActionLog>? actionLogs = [];
+  int currentPage = 0;
+  @override
+  void initState() {
+    super.initState();
+    _getData();
+  }
+
+  void _getData() async {
+    actionLogs = (await ApiService().getLogs())!;
+    Future.delayed(const Duration(seconds: 1)).then((value) => setState(() {}));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // This method is rerun every time setState is called, for instance as done
+    // by the _incrementCounter method above.
+    //
+    // The Flutter framework has been optimized to make rerunning build methods
+    // fast, so that you can just rebuild anything that needs updating rather
+    // than having to individually change instances of widgets.
+    return Scaffold(
+      appBar: AppBar(
+        // Here we take the value from the MyHomePage object that was created by
+        // the App.build method, and use it to set our appbar title.
+        title: Text(widget.title),
+      ),
+      bottomNavigationBar: NavigationBar(
+        destinations: [
+          NavigationDestination(icon: Icon(Icons.home), label: "Home"),
+          NavigationDestination(icon: Icon(Icons.add_chart), label: "Whatever")
+        ],
+        onDestinationSelected: (int i) {
+          setState(() {
+            currentPage = i;
+          });
+        },
+        selectedIndex: currentPage,
+      ),
+      body: Center(
+        // Center is a layout widget. It takes a single child and positions it
+        // in the middle of the parent.
+        child: actionLogs == null || actionLogs!.isEmpty
+            ? const Center(
+                child: CircularProgressIndicator(),
+              )
+            : ListView.builder(
+                itemCount: actionLogs!.length,
+                itemBuilder: (context, index) {
+                  List<Widget> results = [];
+                  var a = actionLogs![index];
+                  if (index == 0) {
+                    results.add(TopHomeFilter());
+                    results.add(DaySeparator(date: a.dateAction, icon: ""));
+                  } else {
+                    if (actionLogs![index - 1].dateAction != a.dateAction) {
+                      results.add(DaySeparator(date: a.dateAction, icon: ""));
+                    }
+                  }
+                  bool showDivider;
+                  if (index < actionLogs!.length - 1) {
+                    showDivider =
+                        (actionLogs![index + 1].dateAction == a.dateAction);
+                  } else {
+                    showDivider = true;
+                  }
+                  results.add(InkWell(
+                    onTap: () {
+                      debugPrint("tap ");
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) =>
+                                  ActionDetail(actionLog: a)));
+                    },
+                    child:
+                        ActionListTile(actionLog: a, showDivider: showDivider),
+                  ));
+
+                  if (results.length > 1) {
+                    return Column(children: results);
+                  }
+                  return results.first;
+                },
+              ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => {},
+        tooltip: 'Ajouter une action',
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+class ActionDetail extends StatelessWidget {
+  final ActionLog actionLog;
+
+  ActionDetail({required this.actionLog});
+
+  @override
+  Widget build(BuildContext context) {
+    final content = Column(children: [
+      Text(actionLog.dateAction.toString()),
+      Text(actionLog.action),
+      Text(actionLog.legume),
+    ]);
+
+    return Scaffold(
+        appBar: AppBar(title: Text(actionLog.id)),
+        body: Center(child: content));
   }
 }

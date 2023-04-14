@@ -18,7 +18,6 @@ type ActionLog struct {
 	Action     string             `json:"action" bson:"action"`
 	Statut     string             `json:"statut" bson:"statut"`
 	Lieu       string             `json:"lieu" bson:"lieu"`
-	Lot        string             `json:"lot" bson:"Lot"`
 	Legume     string             `json:"legume" bson:"legume"`
 	Variete    string             `json:"variete" bson:"variete"`
 	Qte        int                `json:"qte" bson:"qte"`

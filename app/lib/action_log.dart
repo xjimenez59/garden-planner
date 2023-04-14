@@ -20,7 +20,6 @@ class ActionLog {
     required this.action,
     required this.statut,
     required this.lieu,
-    required this.lot,
     required this.legume,
     required this.variete,
     required this.qte,
@@ -37,7 +36,6 @@ class ActionLog {
   String action;
   String statut;
   String lieu;
-  String lot;
   String legume;
   String variete;
   int qte;
@@ -54,7 +52,6 @@ class ActionLog {
         action: json["action"],
         statut: json["statut"],
         lieu: json["lieu"],
-        lot: json["lot"],
         legume: json["legume"],
         variete: json["variete"],
         qte: json["qte"],
@@ -73,7 +70,6 @@ class ActionLog {
         "action": action,
         "statut": statut,
         "lieu": lieu,
-        "lot": lot,
         "legume": legume,
         "variete": variete,
         "qte": qte,

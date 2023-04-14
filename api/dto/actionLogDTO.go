@@ -28,7 +28,6 @@ type ActionLogDTO struct {
 	Action     string   `json:"action"`
 	Statut     string   `json:"statut"`
 	Lieu       string   `json:"lieu"`
-	Lot        string   `json:"Lot"`
 	Legume     string   `json:"legume"`
 	Variete    string   `json:"variete"`
 	Qte        int      `json:"qte"`

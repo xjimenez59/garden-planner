@@ -87,7 +87,6 @@ func dtoToActionLog(d dto.ActionLogDTO) (a models.ActionLog, err error) {
 	a.Action = d.Action
 	a.Statut = d.Statut
 	a.Lieu = d.Lieu
-	a.Lot = d.Lot
 	a.Legume = d.Legume
 	a.Variete = d.Variete
 	a.Qte = d.Qte
