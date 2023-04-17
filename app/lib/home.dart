@@ -2,39 +2,25 @@
 
 ///File download from FlutterViz- Drag and drop a tools. For more details visit https://flutterviz.io/
 
+// ignore_for_file: prefer_const_constructors
+
 import 'package:app/action_log.dart';
 import 'package:flutter/material.dart';
 
 import 'api_service.dart';
+import 'utils.dart';
+import 'action_detail.dart';
 
 class DaySeparator extends StatelessWidget {
   final DateTime date;
   final String icon;
 
-  const DaySeparator({required this.date, required this.icon});
+  const DaySeparator({super.key, required this.date, required this.icon});
 
   @override
   Widget build(BuildContext context) {
-    var weekdays = ["oups", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
-    var monthNames = [
-      "ouch",
-      "Janvier",
-      "Février",
-      "Mars",
-      "Avril",
-      "Mai",
-      "Juin",
-      "Juillet",
-      "Août",
-      "Septembre",
-      "Octobre",
-      "Novembre",
-      "Décembre"
-    ];
-    String strDate =
-        "${weekdays[date.weekday]} ${date.day} ${monthNames[date.month]} ${date.year}";
-    int weeknum =
-        (date.difference(DateTime.utc(date.year, 1, 1)).inDays / 7).ceil() + 1;
+    String strDate = dateFormat(date);
+    int weeknum = weekNum(date);
 
     return Container(
       margin: EdgeInsets.fromLTRB(0, 10, 0, 0),
@@ -108,7 +94,7 @@ class DaySeparator extends StatelessWidget {
 }
 
 class TopHomeFilter extends StatelessWidget {
-  const TopHomeFilter();
+  const TopHomeFilter({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -238,7 +224,8 @@ class ActionListTile extends StatelessWidget {
   final ActionLog actionLog;
   final bool showDivider;
 
-  const ActionListTile({required this.actionLog, this.showDivider = true});
+  const ActionListTile(
+      {super.key, required this.actionLog, this.showDivider = true});
 
   @override
   Widget build(BuildContext context) {
@@ -262,7 +249,7 @@ class ActionListTile extends StatelessWidget {
       lignes.add(Align(
         alignment: Alignment.centerLeft,
         child: Text(
-          "${actionLog.notes}",
+          actionLog.notes,
           textAlign: TextAlign.start,
           overflow: TextOverflow.clip,
           style: TextStyle(
@@ -275,7 +262,7 @@ class ActionListTile extends StatelessWidget {
       ));
     }
 
-    Widget? tagLine = null;
+    Widget? tagLine;
     if (actionLog.tags.isNotEmpty) {
       List<Widget> chips = [];
       for (var tag in actionLog.tags) {
@@ -423,7 +410,7 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(widget.title),
       ),
       bottomNavigationBar: NavigationBar(
-        destinations: [
+        destinations: const [
           NavigationDestination(icon: Icon(Icons.home), label: "Home"),
           NavigationDestination(icon: Icon(Icons.add_chart), label: "Whatever")
         ],
@@ -487,24 +474,5 @@ class _MyHomePageState extends State<MyHomePage> {
         child: const Icon(Icons.add),
       ),
     );
-  }
-}
-
-class ActionDetail extends StatelessWidget {
-  final ActionLog actionLog;
-
-  ActionDetail({required this.actionLog});
-
-  @override
-  Widget build(BuildContext context) {
-    final content = Column(children: [
-      Text(actionLog.dateAction.toString()),
-      Text(actionLog.action),
-      Text(actionLog.legume),
-    ]);
-
-    return Scaffold(
-        appBar: AppBar(title: Text(actionLog.id)),
-        body: Center(child: content));
   }
 }
