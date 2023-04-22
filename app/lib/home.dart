@@ -94,7 +94,11 @@ class DaySeparator extends StatelessWidget {
 }
 
 class TopHomeFilter extends StatelessWidget {
-  const TopHomeFilter({super.key});
+  final TextEditingController filterController;
+  final void Function(String text) onFilterChanged;
+
+  const TopHomeFilter(
+      {required this.filterController, required this.onFilterChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -169,10 +173,9 @@ class TopHomeFilter extends StatelessWidget {
               Expanded(
                 flex: 1,
                 child: TextField(
-                  controller: TextEditingController(),
-                  obscureText: false,
+                  controller: filterController,
+                  onChanged: onFilterChanged,
                   textAlign: TextAlign.start,
-                  maxLines: 1,
                   style: TextStyle(
                     fontWeight: FontWeight.w400,
                     fontStyle: FontStyle.normal,
@@ -375,7 +378,8 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  late List<ActionLog>? actionLogs = [];
+  late List<ActionLog> actionLogs = [];
+  TextEditingController filterController = TextEditingController();
   int currentPage = 0;
   @override
   void initState() {
@@ -383,19 +387,38 @@ class _MyHomePageState extends State<MyHomePage> {
     _getData();
   }
 
+  @override
+  void dispose() {
+    filterController.dispose();
+    super.dispose();
+  }
+
   void _getData() async {
     actionLogs = (await ApiService().getLogs())!;
     Future.delayed(const Duration(seconds: 1)).then((value) => setState(() {}));
   }
 
+  void _onFilterChanged(String text) {
+    setState(
+      () {},
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
+    List<ActionLog>? filteredActionLogs;
+    if (filterController.text == "" || actionLogs.isEmpty) {
+      filteredActionLogs = actionLogs;
+    } else {
+      filteredActionLogs = actionLogs
+          .where((a) => a
+              .toJson()
+              .toString()
+              .toLowerCase()
+              .contains(filterController.text.toLowerCase()))
+          .toList();
+    }
+
     return Scaffold(
       appBar: AppBar(
         // Here we take the value from the MyHomePage object that was created by
@@ -417,48 +440,46 @@ class _MyHomePageState extends State<MyHomePage> {
       body: Center(
         // Center is a layout widget. It takes a single child and positions it
         // in the middle of the parent.
-        child: actionLogs == null || actionLogs!.isEmpty
-            ? const Center(
-                child: CircularProgressIndicator(),
-              )
-            : ListView.builder(
-                itemCount: actionLogs!.length,
-                itemBuilder: (context, index) {
-                  List<Widget> results = [];
-                  var a = actionLogs![index];
-                  if (index == 0) {
-                    results.add(TopHomeFilter());
-                    results.add(DaySeparator(date: a.dateAction, icon: ""));
-                  } else {
-                    if (actionLogs![index - 1].dateAction != a.dateAction) {
-                      results.add(DaySeparator(date: a.dateAction, icon: ""));
-                    }
-                  }
-                  bool showDivider;
-                  if (index < actionLogs!.length - 1) {
-                    showDivider =
-                        (actionLogs![index + 1].dateAction == a.dateAction);
-                  } else {
-                    showDivider = true;
-                  }
-                  results.add(InkWell(
-                    onTap: () {
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) =>
-                                  ActionDetail(actionLog: a)));
-                    },
-                    child:
-                        ActionListTile(actionLog: a, showDivider: showDivider),
-                  ));
+        child: ListView.builder(
+          itemCount: filteredActionLogs.length + 1,
+          itemBuilder: (context, index) {
+            List<Widget> results = [];
 
-                  if (results.length > 1) {
-                    return Column(children: results);
-                  }
-                  return results.first;
+            if (index == 0) {
+              results.add(TopHomeFilter(
+                  filterController: filterController,
+                  onFilterChanged: _onFilterChanged));
+            } else {
+              var a = filteredActionLogs![index - 1];
+
+              if (index == 1 ||
+                  filteredActionLogs[index - 2].dateAction != a.dateAction) {
+                results.add(DaySeparator(date: a.dateAction, icon: ""));
+              }
+              bool showDivider;
+              if (index < filteredActionLogs.length) {
+                showDivider =
+                    (filteredActionLogs[index].dateAction == a.dateAction);
+              } else {
+                showDivider = true;
+              }
+              results.add(InkWell(
+                onTap: () {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => ActionDetail(actionLog: a)));
                 },
-              ),
+                child: ActionListTile(actionLog: a, showDivider: showDivider),
+              ));
+            }
+
+            if (results.length > 1) {
+              return Column(children: results);
+            }
+            return results.first;
+          },
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => {},

@@ -128,7 +128,7 @@ class _ActionDetail extends State<ActionDetail> {
                   Expanded(
                       child: Container(
                     padding: const EdgeInsets.only(left: 0, top: 5, right: 10),
-                    child: actionLog.tags.length < 1
+                    child: actionLog.tags.isEmpty
                         ? null
                         : Wrap(
                             spacing: 5,
