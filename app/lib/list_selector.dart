@@ -8,13 +8,15 @@ class ListSelector extends StatefulWidget {
   List<String> optionsList = [];
   final String value;
   final String title;
-  final Future<List<String>> Function() getOptions;
+  final Future<List<String>> Function(dynamic param) getOptions;
+  final dynamic optionsParam;
 
   ListSelector(
       {super.key,
       required this.title,
       required this.value,
-      required this.getOptions});
+      required this.getOptions,
+      this.optionsParam});
 
   @override
   State<StatefulWidget> createState() {
@@ -26,7 +28,7 @@ class ListSelector extends StatefulWidget {
 class _ListSelector extends State<ListSelector> {
   String editedValue;
   List<String> optionsList = [];
-  Future<List<String>> Function() getOptions;
+  Future<List<String>> Function(dynamic param) getOptions;
   TextEditingController editController = TextEditingController();
 
   _ListSelector({this.editedValue = "", required this.getOptions});
@@ -34,7 +36,7 @@ class _ListSelector extends State<ListSelector> {
   @override
   void initState() {
     editController.text = editedValue;
-    getOptions().then((result) => setState(() {
+    getOptions(widget.optionsParam).then((result) => setState(() {
           widget.optionsList = result;
           optionsList = result;
         }));
@@ -83,10 +85,14 @@ class _ListSelector extends State<ListSelector> {
   void filterOptions(String newValue) {
     setState(() {
       editedValue = newValue;
-      optionsList = widget.optionsList
-          .where((element) =>
-              element.toLowerCase().contains(newValue.toLowerCase()))
-          .toList();
+      if (newValue == "" || newValue == widget.value) {
+        optionsList = widget.optionsList;
+      } else {
+        optionsList = widget.optionsList
+            .where((element) =>
+                element.toLowerCase().contains(newValue.toLowerCase()))
+            .toList();
+      }
     });
   }
 

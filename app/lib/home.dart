@@ -265,33 +265,26 @@ class ActionListTile extends StatelessWidget {
     Widget? tagLine;
     if (actionLog.tags.isNotEmpty) {
       List<Widget> chips = [];
-      for (var tag in actionLog.tags) {
-        chips.add(Chip(
-          labelPadding: EdgeInsets.symmetric(vertical: 0, horizontal: 4),
-          label: Text(tag),
-          labelStyle: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w400,
-            fontStyle: FontStyle.normal,
-            color: Color.fromARGB(255, 0, 0, 0),
-          ),
-          backgroundColor: Color.fromARGB(255, 203, 247, 93),
-          elevation: 2,
-          shadowColor: Color(0xff808080),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16.0),
-          ),
-        ));
-      }
+      chips = actionLog.tags.map(
+        (s) {
+          return Chip(
+            elevation: 0,
+            shadowColor: Colors.teal,
+            // pressElevation: 0,
+            // backgroundColor: Colors.blue[100],
+            // shape: RoundedRectangleBorder(
+            //   borderRadius: BorderRadius.circular(7),
+            // ),
+            label: Text(s, style: TextStyle(color: Colors.blue[900])),
+          );
+        },
+      ).toList();
 
       tagLine = Padding(
-        padding: EdgeInsets.fromLTRB(10, 5, 0, 0),
-        child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisSize: MainAxisSize.max,
-            children: chips),
-      );
+          padding: const EdgeInsets.only(left: 10, right: 10),
+          child: Align(
+              alignment: Alignment.topRight,
+              child: Wrap(spacing: 5, runSpacing: 5, children: chips)));
     }
 
     var tile = Column(
@@ -450,7 +443,6 @@ class _MyHomePageState extends State<MyHomePage> {
                   }
                   results.add(InkWell(
                     onTap: () {
-                      debugPrint("tap ");
                       Navigator.push(
                           context,
                           MaterialPageRoute(
