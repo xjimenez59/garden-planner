@@ -17,10 +17,10 @@ class ActionDetail extends StatefulWidget {
   const ActionDetail({super.key, required this.actionLog});
 
   @override
+  // ignore: no_logic_in_create_state
   State<StatefulWidget> createState() {
     ActionLog clone =
         ActionLog.fromJson(jsonDecode(jsonEncode(actionLog.toJson())));
-    // ignore: no_logic_in_create_state
     return _ActionDetail(actionLog: clone);
   }
 }
@@ -327,7 +327,11 @@ class _ActionDetail extends State<ActionDetail> {
   }
 
   Future<List<String>> _getTags(dynamic param) async {
-    List<String> result = ["ceci", "cela", "et voilà"];
+    List<String>? result;
+    result = (await ApiService().getTags());
+    if (result == null) {
+      result = [];
+    }
 
     return result;
   }

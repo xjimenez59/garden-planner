@@ -4,4 +4,5 @@ class ApiConstants {
 
   static String logsEndpoint = '/logs';
   static String legumesEndPoint = '/legumes';
+  static String tagsEndPoint = '/tags';
 }

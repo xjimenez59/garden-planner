@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:developer';
 
 import 'package:http/http.dart' as http;
@@ -16,6 +17,7 @@ class ApiService {
       }
     } catch (e) {
       log(e.toString());
+      return [];
     }
   }
 
@@ -29,6 +31,21 @@ class ApiService {
       }
     } catch (e) {
       log(e.toString());
+      return [];
+    }
+  }
+
+  Future<List<String>?> getTags() async {
+    try {
+      var url = Uri.parse(ApiConstants.baseUrl + ApiConstants.tagsEndPoint);
+      var response = await http.get(url);
+      if (response.statusCode == 200) {
+        List<String> result = List<String>.from(jsonDecode(response.body));
+        return result;
+      }
+    } catch (e) {
+      log(e.toString());
+      return [];
     }
   }
 }
