@@ -174,7 +174,7 @@ class TopHomeFilter extends StatelessWidget {
                 flex: 1,
                 child: TextField(
                   controller: filterController,
-                  onChanged: onFilterChanged,
+                  onSubmitted: onFilterChanged,
                   textAlign: TextAlign.start,
                   style: TextStyle(
                     fontWeight: FontWeight.w400,

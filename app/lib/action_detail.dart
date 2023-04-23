@@ -1,5 +1,7 @@
 // ignore_for_file: prefer_const_constructors
 
+import 'dart:convert';
+
 import 'package:app/action_log.dart';
 import 'package:flutter/material.dart';
 
@@ -16,8 +18,10 @@ class ActionDetail extends StatefulWidget {
 
   @override
   State<StatefulWidget> createState() {
+    ActionLog clone =
+        ActionLog.fromJson(jsonDecode(jsonEncode(actionLog.toJson())));
     // ignore: no_logic_in_create_state
-    return _ActionDetail(actionLog: actionLog);
+    return _ActionDetail(actionLog: clone);
   }
 }
 
@@ -174,7 +178,16 @@ class _ActionDetail extends State<ActionDetail> {
     String pageTitle =
         "${actionLog.action} du ${actionLog.dateAction.day} ${monthNames[actionLog.dateAction.month]}";
     return Scaffold(
-        appBar: AppBar(title: Text(pageTitle)),
+        appBar: AppBar(
+          title: Text(pageTitle),
+        ),
+        floatingActionButton: actionLog.isModified == false
+            ? Container()
+            : FloatingActionButton(
+                onPressed: () => {},
+                tooltip: 'Enregistrer',
+                child: const Icon(Icons.save),
+              ),
         body: Align(
             alignment: Alignment.topCenter,
             child: Padding(
@@ -194,6 +207,11 @@ class _ActionDetail extends State<ActionDetail> {
                   getOptions: _getTags,
                 )));
     setState(() {
+      var diff =
+          (result as List<String>).toSet().difference(actionLog.tags.toSet());
+      if (diff.isNotEmpty) {
+        actionLog.isModified = true;
+      }
       actionLog.tags = result;
     });
   }
@@ -207,6 +225,9 @@ class _ActionDetail extends State<ActionDetail> {
                 value: actionLog.action,
                 getOptions: _getActions)));
     setState(() {
+      if (actionLog.action != result) {
+        actionLog.isModified = true;
+      }
       actionLog.action = result;
       actionInput.text = result;
     });
@@ -215,12 +236,16 @@ class _ActionDetail extends State<ActionDetail> {
   void onCalendarTap() async {
     DateTime? pickedDate = await showDatePicker(
         context: context,
-        initialDate: DateTime.now(),
+        initialDate: actionLog.dateAction,
         firstDate: DateTime(1950),
         //DateTime.now() - not to allow to choose before today.
         lastDate: DateTime(2100));
 
     if (pickedDate != null) {
+      if (actionLog.dateAction != pickedDate) {
+        actionLog.isModified = true;
+      }
+
       String formattedDate = dateFormat(pickedDate);
       setState(() {
         dateInput.text = formattedDate; //set output date to TextField value.
@@ -237,11 +262,14 @@ class _ActionDetail extends State<ActionDetail> {
                 value: actionLog.legume,
                 getOptions: _getLegumes)));
     setState(() {
-      actionLog.legume = result;
-      legumeInput.text = result;
+      if (actionLog.legume != result) {
+        actionLog.isModified = true;
+        actionLog.legume = result;
+        legumeInput.text = result;
 
-      actionLog.variete = "";
-      varieteInput.text = "";
+        actionLog.variete = "";
+        varieteInput.text = "";
+      }
     });
   }
 
@@ -255,6 +283,9 @@ class _ActionDetail extends State<ActionDetail> {
                 optionsParam: actionLog,
                 getOptions: _getVarietes)));
     setState(() {
+      if (actionLog.variete != result) {
+        actionLog.isModified = true;
+      }
       actionLog.variete = result;
       varieteInput.text = result;
     });

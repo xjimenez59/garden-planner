@@ -21,7 +21,8 @@ class TagsSelector extends StatefulWidget {
   @override
   State<StatefulWidget> createState() {
     // ignore: no_logic_in_create_state
-    return _TagsSelector(selectedTags: value, getOptions: getOptions);
+    return _TagsSelector(
+        selectedTags: List.from(value), getOptions: getOptions);
   }
 }
 

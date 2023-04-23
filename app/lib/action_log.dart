@@ -29,6 +29,7 @@ class ActionLog {
     required this.tags,
   });
 
+  bool isModified = false;
   String id;
   String parentId;
   String jardin;
