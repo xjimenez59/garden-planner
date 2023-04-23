@@ -21,5 +21,7 @@ func main() {
 	router.GET("/gardens", controllers.GetGardens)
 	router.GET("/legumes", controllers.GetLegumes)
 
+	router.GET("/tags", controllers.GetTags)
+
 	router.Run("localhost:8081")
 }

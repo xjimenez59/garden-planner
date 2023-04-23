@@ -58,6 +58,20 @@ func PostLogs(c *gin.Context) {
 	c.IndentedJSON(http.StatusCreated, fmt.Sprintf("{updated: %d}", updatedLogs))
 }
 
+func GetTags(c *gin.Context) {
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var tags, err = models.GetTags(ctx)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, err)
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, tags)
+}
+
 func dtoToActionLog(d dto.ActionLogDTO) (a models.ActionLog, err error) {
 	a = models.ActionLog{}
 	if d.ID == "" {

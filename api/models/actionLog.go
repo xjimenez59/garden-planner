@@ -73,3 +73,21 @@ func SaveLogs(ctx context.Context, logs []ActionLog) (updsertedLogsCount int, er
 
 	return int(results.UpsertedCount), err
 }
+
+func GetTags(ctx context.Context) (result []string, err error) {
+	result = make([]string, 0)
+	var data []interface{}
+
+	filter := bson.D{}
+	data, err = config.DB.Collection("actionLog").Distinct(ctx, "tags", filter)
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range data {
+		tag, ok := v.(string)
+		if ok {
+			result = append(result, tag)
+		}
+	}
+	return result, nil
+}
