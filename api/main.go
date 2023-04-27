@@ -17,6 +17,8 @@ func main() {
 
 	router.GET("/logs", controllers.GetLogs)
 	router.POST("/logs", controllers.PostLogs)
+	router.POST("/log", controllers.PostLog)
+	router.DELETE("/log/:id", controllers.DeleteLog)
 
 	router.GET("/gardens", controllers.GetGardens)
 	router.GET("/legumes", controllers.GetLegumes)

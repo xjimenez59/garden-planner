@@ -352,7 +352,10 @@ class ActionListTile extends StatelessWidget {
     }
 
     if (true == showDivider) {
-      tile.children.add(Divider(color: Color(0xff808080)));
+      tile.children.add(Divider(
+        color: Color(0xff808080),
+        height: 1,
+      ));
     }
 
     return tile;
@@ -398,6 +401,10 @@ class _MyHomePageState extends State<MyHomePage> {
     Future.delayed(const Duration(seconds: 1)).then((value) => setState(() {}));
   }
 
+  Future<void> _onRefresh() async {
+    _getData();
+  }
+
   void _onFilterChanged(String text) {
     setState(
       () {},
@@ -407,6 +414,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     List<ActionLog>? filteredActionLogs;
+    DateTime lastDate = DateTime(1965);
     if (filterController.text == "" || actionLogs.isEmpty) {
       filteredActionLogs = actionLogs;
     } else {
@@ -417,6 +425,7 @@ class _MyHomePageState extends State<MyHomePage> {
               .toLowerCase()
               .contains(filterController.text.toLowerCase()))
           .toList();
+      filteredActionLogs.sort((a, b) => b.dateAction.compareTo(a.dateAction));
     }
 
     return Scaffold(
@@ -437,55 +446,92 @@ class _MyHomePageState extends State<MyHomePage> {
         },
         selectedIndex: currentPage,
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: ListView.builder(
-          itemCount: filteredActionLogs.length + 1,
-          itemBuilder: (context, index) {
-            List<Widget> results = [];
+      body: RefreshIndicator(
+          onRefresh: _onRefresh,
+          child: Center(
+            // Center is a layout widget. It takes a single child and positions it
+            // in the middle of the parent.
+            child: ListView.builder(
+              itemCount: filteredActionLogs.length + 1,
+              itemBuilder: (context, index) {
+                List<Widget> results = [];
 
-            if (index == 0) {
-              results.add(TopHomeFilter(
-                  filterController: filterController,
-                  onFilterChanged: _onFilterChanged));
-            } else {
-              var a = filteredActionLogs![index - 1];
+                if (index == 0) {
+                  results.add(TopHomeFilter(
+                      filterController: filterController,
+                      onFilterChanged: _onFilterChanged));
+                } else {
+                  var a = filteredActionLogs![index - 1];
 
-              if (index == 1 ||
-                  filteredActionLogs[index - 2].dateAction != a.dateAction) {
-                results.add(DaySeparator(date: a.dateAction, icon: ""));
-              }
-              bool showDivider;
-              if (index < filteredActionLogs.length) {
-                showDivider =
-                    (filteredActionLogs[index].dateAction == a.dateAction);
-              } else {
-                showDivider = true;
-              }
-              results.add(InkWell(
-                onTap: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => ActionDetail(actionLog: a)));
-                },
-                child: ActionListTile(actionLog: a, showDivider: showDivider),
-              ));
-            }
+                  if (!(lastDate.sameDayAs(a.dateAction))) {
+                    lastDate = a.dateAction;
+                    results.add(DaySeparator(date: a.dateAction, icon: ""));
+                  }
+                  bool showDivider = (index == filteredActionLogs.length) ||
+                      (filteredActionLogs[index]
+                          .dateAction
+                          .sameDayAs(a.dateAction));
+                  results.add(Dismissible(
+                      key: Key(a.id),
+                      onDismissed: onTileDismissed(index - 1),
+                      background: Container(
+                          color: Colors.red.shade100,
+                          margin: EdgeInsets.only(bottom: 0)),
+                      child: InkWell(
+                        onTap: onTileTap(a),
+                        child: ActionListTile(
+                            actionLog: a, showDivider: showDivider),
+                      )));
+                }
 
-            if (results.length > 1) {
-              return Column(children: results);
-            }
-            return results.first;
-          },
-        ),
-      ),
+                if (results.length > 1) {
+                  return Column(children: results);
+                }
+                return results.first;
+              },
+            ),
+          )),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => {},
+        onPressed: () async {
+          DateTime today = DateTime.now();
+          today = DateTime(today.year, today.month, today.day);
+          ActionLog a = ActionLog(dateAction: today);
+          ActionLog result = await Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => ActionDetail(actionLog: a)));
+          setState(() {
+            //-- result est une copie de a. On doit donc "recharger" a avec les valeurs modifiées.
+            a.updateFrom(result);
+            actionLogs.add(a);
+            actionLogs.sort((a, b) => b.dateAction.compareTo(a.dateAction));
+          });
+        },
         tooltip: 'Ajouter une action',
         child: const Icon(Icons.add),
       ),
     );
+  }
+
+  void Function() onTileTap(ActionLog a) {
+    return () async {
+      ActionLog result = await Navigator.push(context,
+          MaterialPageRoute(builder: (context) => ActionDetail(actionLog: a)));
+      setState(() {
+        //-- result est une copie de a. On doit donc "recharger" a avec les valeurs modifiées.
+        a.updateFrom(result);
+      });
+    };
+  }
+
+  void Function(DismissDirection direction) onTileDismissed(int index) {
+    return (DismissDirection direction) async {
+      bool deleted = await ApiService().deleteLog(actionLogs[index].id);
+      if (deleted) {
+        setState(() {
+          actionLogs.removeAt(index);
+        });
+      }
+    };
   }
 }

@@ -101,8 +101,15 @@ class _ActionDetail extends State<ActionDetail> {
         decoration:
             const InputDecoration(labelText: "quantité" //label text of field
                 ),
+
         onSubmitted: (value) {
-          actionLog.qte = int.parse(value);
+          int intVal = int.parse(value);
+          if (widget.actionLog.qte != intVal) {
+            setState(() {
+              actionLog.qte = intVal;
+              actionLog.isModified = true;
+            });
+          }
         },
       ),
       TextField(
@@ -113,7 +120,13 @@ class _ActionDetail extends State<ActionDetail> {
             labelText: "poids (en grammes)" //label text of field
             ),
         onSubmitted: (value) {
-          actionLog.poids = int.parse(value);
+          int intVal = int.parse(value);
+          if (widget.actionLog.poids != intVal) {
+            setState(() {
+              actionLog.poids = intVal;
+              actionLog.isModified = true;
+            });
+          }
         },
       ),
       InkWell(
@@ -184,7 +197,7 @@ class _ActionDetail extends State<ActionDetail> {
         floatingActionButton: actionLog.isModified == false
             ? Container()
             : FloatingActionButton(
-                onPressed: () => {},
+                onPressed: onSaveTap,
                 tooltip: 'Enregistrer',
                 child: const Icon(Icons.save),
               ),
@@ -197,6 +210,13 @@ class _ActionDetail extends State<ActionDetail> {
                 ))));
   }
 
+  void onSaveTap() async {
+    String result = await _postLog(actionLog);
+    actionLog.id = result;
+    actionLog.isModified = false;
+    Navigator.pop(context, actionLog);
+  }
+
   void onTagsTap() async {
     final result = await Navigator.push(
         context,
@@ -207,8 +227,9 @@ class _ActionDetail extends State<ActionDetail> {
                   getOptions: _getTags,
                 )));
     setState(() {
-      var diff =
-          (result as List<String>).toSet().difference(actionLog.tags.toSet());
+      var diff = (result as List<String>)
+          .toSet()
+          .difference(widget.actionLog.tags.toSet());
       if (diff.isNotEmpty) {
         actionLog.isModified = true;
       }
@@ -225,7 +246,7 @@ class _ActionDetail extends State<ActionDetail> {
                 value: actionLog.action,
                 getOptions: _getActions)));
     setState(() {
-      if (actionLog.action != result) {
+      if (widget.actionLog.action != result) {
         actionLog.isModified = true;
       }
       actionLog.action = result;
@@ -242,7 +263,7 @@ class _ActionDetail extends State<ActionDetail> {
         lastDate: DateTime(2100));
 
     if (pickedDate != null) {
-      if (actionLog.dateAction != pickedDate) {
+      if (widget.actionLog.dateAction != pickedDate) {
         actionLog.isModified = true;
       }
 
@@ -262,7 +283,7 @@ class _ActionDetail extends State<ActionDetail> {
                 value: actionLog.legume,
                 getOptions: _getLegumes)));
     setState(() {
-      if (actionLog.legume != result) {
+      if (widget.actionLog.legume != result) {
         actionLog.isModified = true;
         actionLog.legume = result;
         legumeInput.text = result;
@@ -283,7 +304,7 @@ class _ActionDetail extends State<ActionDetail> {
                 optionsParam: actionLog,
                 getOptions: _getVarietes)));
     setState(() {
-      if (actionLog.variete != result) {
+      if (widget.actionLog.variete != result) {
         actionLog.isModified = true;
       }
       actionLog.variete = result;
@@ -332,6 +353,26 @@ class _ActionDetail extends State<ActionDetail> {
     if (result == null) {
       result = [];
     }
+
+    return result;
+  }
+
+  Future<int> _postLogs(List<ActionLog> logs) async {
+    int? result;
+    result = (await ApiService().postLogs(logs));
+    if (result == null) {
+      result = 0;
+    }
+
+    return result;
+  }
+
+  Future<String> _postLog(ActionLog a) async {
+    String? result;
+    result = (await ApiService().postLog(a));
+    if (result == null) {
+      result = "";
+    } else {}
 
     return result;
   }

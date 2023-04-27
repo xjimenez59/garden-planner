@@ -26,6 +26,35 @@ func GetLogs(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, actionLogs)
 }
 
+func PostLog(c *gin.Context) {
+	var postedDTO dto.ActionLogDTO
+	var actionLog models.ActionLog
+	var err error
+	var id primitive.ObjectID
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err = c.BindJSON(&postedDTO); err != nil {
+		c.IndentedJSON(http.StatusNotAcceptable, err)
+		return
+	}
+
+	actionLog, err = dtoToActionLog(postedDTO)
+	if err != nil {
+		c.IndentedJSON(http.StatusNotAcceptable, err)
+		return
+	}
+
+	id, err = actionLog.Save(ctx)
+	if err != nil {
+		c.IndentedJSON(http.StatusNotAcceptable, err)
+		return
+	}
+
+	c.IndentedJSON(http.StatusCreated, map[string]string{"_id": id.Hex()})
+}
+
 func PostLogs(c *gin.Context) {
 	var postedDTO []dto.ActionLogDTO
 	var logActions []models.ActionLog
@@ -58,6 +87,28 @@ func PostLogs(c *gin.Context) {
 	c.IndentedJSON(http.StatusCreated, fmt.Sprintf("{updated: %d}", updatedLogs))
 }
 
+func DeleteLog(c *gin.Context) {
+	var err error
+	var id string = c.Param("id")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	objId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		c.IndentedJSON(http.StatusNotFound, err)
+		return
+	}
+
+	err = models.DeleteLog(ctx, objId)
+	if err != nil {
+		c.IndentedJSON(http.StatusNotModified, err)
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, map[string]string{"_id": id})
+}
+
 func GetTags(c *gin.Context) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -75,7 +126,7 @@ func GetTags(c *gin.Context) {
 func dtoToActionLog(d dto.ActionLogDTO) (a models.ActionLog, err error) {
 	a = models.ActionLog{}
 	if d.ID == "" {
-		a.ID = primitive.NewObjectID()
+		a.ID = primitive.NilObjectID
 	} else {
 		a.ID, err = primitive.ObjectIDFromHex(d.ID)
 		if err != nil {

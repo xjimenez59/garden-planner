@@ -13,20 +13,20 @@ String actionLogToJson(ActionLog data) => json.encode(data.toJson());
 
 class ActionLog {
   ActionLog({
-    required this.id,
-    required this.parentId,
-    required this.jardin,
+    this.id = "",
+    this.parentId = "",
+    this.jardin = "",
     required this.dateAction,
-    required this.action,
-    required this.statut,
-    required this.lieu,
-    required this.legume,
-    required this.variete,
-    required this.qte,
-    required this.poids,
-    required this.notes,
-    required this.photos,
-    required this.tags,
+    this.action = "",
+    this.statut = "",
+    this.lieu = "",
+    this.legume = "",
+    this.variete = "",
+    this.qte = 0,
+    this.poids = 0,
+    this.notes = "",
+    this.photos = const [],
+    this.tags = const [],
   });
 
   bool isModified = false;
@@ -79,4 +79,22 @@ class ActionLog {
         "photos": List<dynamic>.from(photos.map((x) => x)),
         "tags": List<dynamic>.from(tags.map((x) => x)),
       };
+
+  void updateFrom(ActionLog a) {
+    isModified = a.isModified;
+    id = a.id;
+    parentId = a.parentId;
+    jardin = a.jardin;
+    dateAction = a.dateAction;
+    action = a.action;
+    statut = a.statut;
+    lieu = a.lieu;
+    legume = a.legume;
+    variete = a.variete;
+    qte = a.qte;
+    poids = a.poids;
+    notes = a.notes;
+    photos = a.photos;
+    tags = a.tags;
+  }
 }

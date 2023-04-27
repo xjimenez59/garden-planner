@@ -3,6 +3,7 @@ class ApiConstants {
 //  static String baseUrl = 'http://localhost:8081';
 
   static String logsEndpoint = '/logs';
+  static String logEndpoint = '/log';
   static String legumesEndPoint = '/legumes';
   static String tagsEndPoint = '/tags';
 }

@@ -26,3 +26,11 @@ int weekNum(DateTime date) {
       (date.difference(DateTime.utc(date.year, 1, 1)).inDays / 7).ceil() + 1;
   return weeknum;
 }
+
+extension DateTools on DateTime {
+  bool sameDayAs(DateTime other) {
+    return (this.year == other.year) &&
+        (this.month == other.month) &&
+        (this.day == other.day);
+  }
+}

@@ -48,4 +48,47 @@ class ApiService {
       return [];
     }
   }
+
+  Future<int?> postLogs(List<ActionLog> logs) async {
+    try {
+      var url = Uri.parse(ApiConstants.baseUrl + ApiConstants.logsEndpoint);
+      var response = await http.post(url, body: jsonEncode(logs));
+      if (response.statusCode == 201) {
+        dynamic result = jsonDecode(response.body);
+        return result["updated"];
+      }
+    } catch (e) {
+      log(e.toString());
+      return 0;
+    }
+  }
+
+  Future<String?> postLog(ActionLog a) async {
+    try {
+      var url = Uri.parse(ApiConstants.baseUrl + ApiConstants.logEndpoint);
+      var response = await http.post(url, body: jsonEncode(a));
+      if (response.statusCode == 201) {
+        dynamic result = jsonDecode(response.body);
+        return result["_id"];
+      }
+    } catch (e) {
+      log(e.toString());
+    }
+    return null;
+  }
+
+  Future<bool> deleteLog(String id) async {
+    try {
+      var url =
+          Uri.parse(ApiConstants.baseUrl + ApiConstants.logEndpoint + "/$id");
+      var response = await http.delete(url);
+      if (response.statusCode == 200) {
+        dynamic result = jsonDecode(response.body);
+        return true;
+      }
+    } catch (e) {
+      log(e.toString());
+    }
+    return false;
+  }
 }

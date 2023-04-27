@@ -11,8 +11,8 @@ import (
 )
 
 type ActionLog struct {
-	ID         primitive.ObjectID `json:"_id" bson:"_id"`
-	ParentId   primitive.ObjectID `json:"_parentId" bson:"_parentId"`
+	ID         primitive.ObjectID `json:"_id" bson:"_id,omitempty"`
+	ParentId   primitive.ObjectID `json:"_parentId" bson:"_parentId,omitempty"`
 	Jardin     string             `json:"jardin" bson:"jardin"`
 	DateAction primitive.DateTime `json:"dateAction" bson:"dateAction"`
 	Action     string             `json:"action" bson:"action"`
@@ -45,15 +45,23 @@ func GetLogs(ctx context.Context) (result []ActionLog, err error) {
 	return result, nil
 }
 
-func (a *ActionLog) Save(ctx context.Context) (err error) {
-
+func (a *ActionLog) Save(ctx context.Context) (id primitive.ObjectID, err error) {
 	logsCollection := config.DB.Collection("actionLog")
+	id = primitive.NilObjectID
 	if a.ID.IsZero() {
-		_, err = logsCollection.InsertOne(ctx, a)
+		var result *mongo.InsertOneResult
+		result, err = logsCollection.InsertOne(ctx, a)
+		if err == nil {
+			id = result.InsertedID.(primitive.ObjectID)
+		}
 	} else {
-		_, err = logsCollection.UpdateByID(ctx, a.ID, a)
+		filter := bson.D{{"_id", a.ID}}
+		_, err = logsCollection.ReplaceOne(ctx, filter, a)
+		if err == nil {
+			id = a.ID
+		}
 	}
-	return err
+	return id, err
 }
 
 func SaveLogs(ctx context.Context, logs []ActionLog) (updsertedLogsCount int, err error) {
@@ -72,6 +80,14 @@ func SaveLogs(ctx context.Context, logs []ActionLog) (updsertedLogsCount int, er
 	results, err := logsCollection.BulkWrite(ctx, models)
 
 	return int(results.UpsertedCount), err
+}
+
+func DeleteLog(ctx context.Context, id primitive.ObjectID) (err error) {
+
+	logsCollection := config.DB.Collection("actionLog")
+	filter := bson.D{{"_id", id}}
+	_, err = logsCollection.DeleteOne(ctx, filter)
+	return err
 }
 
 func GetTags(ctx context.Context) (result []string, err error) {
