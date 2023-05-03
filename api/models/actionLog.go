@@ -70,11 +70,16 @@ func SaveLogs(ctx context.Context, logs []ActionLog) (updsertedLogsCount int, er
 	models := []mongo.WriteModel{}
 
 	for _, a := range logs {
-		m := mongo.NewReplaceOneModel().
-			SetFilter(bson.D{{Key: "_id", Value: a.ID}}).
-			SetReplacement(a).
-			SetUpsert(true)
-		models = append(models, m)
+		if a.ID.IsZero() {
+			m := mongo.NewInsertOneModel().SetDocument(a)
+			models = append(models, m)
+		} else {
+			m := mongo.NewReplaceOneModel().
+				SetFilter(bson.D{{Key: "_id", Value: a.ID}}).
+				SetReplacement(a).
+				SetUpsert(true)
+			models = append(models, m)
+		}
 	}
 
 	results, err := logsCollection.BulkWrite(ctx, models)
