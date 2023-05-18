@@ -32,6 +32,12 @@ services:
       - type: volume
         source : garden-planner-api-volume
         target: /opt/app/api
+  webapp:
+    platform: linux/arm64
+    image: garden-planner-webapp
+    ports:
+      - "8080:80"
+
 
 volumes:
   garden-planner-volume:

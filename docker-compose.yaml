@@ -31,6 +31,13 @@ services:
         source : garden-planner-api-volume
         target: /opt/app/api
 
+  webapp:
+    build:
+      context: ./app
+      target: raspberry   # debug, windows ou raspberry
+    ports:
+      - "8080:80"
+
 volumes:
   garden-planner-volume:
 
