@@ -25,5 +25,5 @@ func main() {
 
 	router.GET("/tags", controllers.GetTags)
 
-	router.Run("localhost:8081")
+	router.Run("0.0.0.0:8081")
 }

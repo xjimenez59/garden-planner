@@ -2,7 +2,8 @@ version: '3'
 
 services:
   mongo:
-    image: mongo
+    platform: linux/arm64
+    image:  mongo:bionic
     restart: always
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
@@ -15,9 +16,10 @@ services:
         source: garden-planner-volume
         target: /data/db
   api:
-    build:
-      context: ./api
-      target: raspberry   # debug, windows ou raspberry
+    image: garden-planner-api
+#    build:
+#      context: ./api
+#      target: raspberry   # debug, windows ou raspberry
     ports:
       - "8081:8081"
     environment:
