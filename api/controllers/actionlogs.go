@@ -60,7 +60,7 @@ func PostLogs(c *gin.Context) {
 	var logActions []models.ActionLog
 	var err error
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
 	defer cancel()
 
 	if err = c.BindJSON(&postedDTO); err != nil {
@@ -121,6 +121,20 @@ func GetTags(c *gin.Context) {
 	}
 
 	c.IndentedJSON(http.StatusOK, tags)
+}
+
+func GetLieux(c *gin.Context) {
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var lieux, err = models.GetLieux(ctx)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, err)
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, lieux)
 }
 
 func dtoToActionLog(d dto.ActionLogDTO) (a models.ActionLog, err error) {

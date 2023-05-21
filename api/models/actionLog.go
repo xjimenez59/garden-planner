@@ -75,9 +75,9 @@ func SaveLogs(ctx context.Context, logs []ActionLog) (updsertedLogsCount int, er
 			models = append(models, m)
 		} else {
 			m := mongo.NewReplaceOneModel().
-				SetFilter(bson.D{{Key: "_id", Value: a.ID}}).
+				SetFilter(bson.D{{"_id", a.ID}}).
 				SetReplacement(a).
-				SetUpsert(true)
+				SetUpsert(false)
 			models = append(models, m)
 		}
 	}
@@ -108,6 +108,24 @@ func GetTags(ctx context.Context) (result []string, err error) {
 		tag, ok := v.(string)
 		if ok {
 			result = append(result, tag)
+		}
+	}
+	return result, nil
+}
+
+func GetLieux(ctx context.Context) (result []string, err error) {
+	result = make([]string, 0)
+	var data []interface{}
+
+	filter := bson.D{}
+	data, err = config.DB.Collection("actionLog").Distinct(ctx, "lieu", filter)
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range data {
+		lieu, ok := v.(string)
+		if ok {
+			result = append(result, lieu)
 		}
 	}
 	return result, nil

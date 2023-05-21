@@ -49,6 +49,20 @@ class ApiService {
     }
   }
 
+  Future<List<String>?> getLieux() async {
+    try {
+      var url = Uri.parse(ApiConstants.baseUrl + ApiConstants.lieuxEndPoint);
+      var response = await http.get(url);
+      if (response.statusCode == 200) {
+        List<String> result = List<String>.from(jsonDecode(response.body));
+        return result;
+      }
+    } catch (e) {
+      log(e.toString());
+      return [];
+    }
+  }
+
   Future<int?> postLogs(List<ActionLog> logs) async {
     try {
       var url = Uri.parse(ApiConstants.baseUrl + ApiConstants.logsEndpoint);

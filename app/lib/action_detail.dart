@@ -33,6 +33,7 @@ class _ActionDetail extends State<ActionDetail> {
   TextEditingController quantiteInput = TextEditingController();
   TextEditingController poidsInput = TextEditingController();
   TextEditingController notesInput = TextEditingController();
+  TextEditingController lieuInput = TextEditingController();
 
   ActionLog actionLog;
 
@@ -47,6 +48,7 @@ class _ActionDetail extends State<ActionDetail> {
     quantiteInput.text = actionLog.qte.toString();
     poidsInput.text = actionLog.poids.toString();
     notesInput.text = actionLog.notes;
+    lieuInput.text = actionLog.lieu;
 
     super.initState();
   }
@@ -73,6 +75,16 @@ class _ActionDetail extends State<ActionDetail> {
             ),
         readOnly: true,
         onTap: onCalendarTap,
+      ),
+      TextField(
+        //-- lieu
+        controller: lieuInput,
+        decoration: const InputDecoration(
+            suffixIcon: Icon(Icons.chevron_right),
+            labelText: "Lieu" //label text of field
+            ),
+        readOnly: true,
+        onTap: onLieuTap,
       ),
       TextField(
         //-- légume
@@ -274,6 +286,23 @@ class _ActionDetail extends State<ActionDetail> {
     } else {}
   }
 
+  void onLieuTap() async {
+    final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => ListSelector(
+                title: "Emplacement / Lieu",
+                value: actionLog.lieu,
+                getOptions: _getLieux)));
+    setState(() {
+      if (widget.actionLog.lieu != result) {
+        actionLog.isModified = true;
+        actionLog.lieu = result;
+        lieuInput.text = result;
+      }
+    });
+  }
+
   void onLegumeTap() async {
     final result = await Navigator.push(
         context,
@@ -344,6 +373,15 @@ class _ActionDetail extends State<ActionDetail> {
           .varietes;
     }
 
+    return result;
+  }
+
+  Future<List<String>> _getLieux(dynamic param) async {
+    List<String>? listLieux = (await ApiService().getLieux());
+    List<String> result = [];
+    listLieux?.forEach((element) {
+      result.add(element);
+    });
     return result;
   }
 

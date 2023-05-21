@@ -9,7 +9,14 @@
       "type": "go",
       "request": "launch",
       "mode": "debug",
-      "program": "api/main.go"
+      "program": "api/main.go",
+      "env": {
+         "MONGO_HOST":"192.168.1.8",
+         "MONGO_PORT":"27017",
+         "MONGO_USER":"root",
+         "MONGO_PWD":"zorglub",
+         "MONGO_DBNAME":"garden-planner"
+      }
    }
    ]
 }
