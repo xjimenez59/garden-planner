@@ -5,6 +5,7 @@
 // ignore_for_file: prefer_const_constructors
 
 import 'package:app/action_log.dart';
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 
 import 'api_service.dart';
@@ -363,7 +364,7 @@ class ActionListTile extends StatelessWidget {
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+  const MyHomePage({super.key, required this.title, required this.cameras});
 
   // This widget is the home page of your application. It is stateful, meaning
   // that it has a State object (defined below) that contains fields that affect
@@ -375,6 +376,7 @@ class MyHomePage extends StatefulWidget {
   // always marked "final".
 
   final String title;
+  final List<CameraDescription> cameras;
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -499,7 +501,10 @@ class _MyHomePageState extends State<MyHomePage> {
           ActionLog result = await Navigator.push(
               context,
               MaterialPageRoute(
-                  builder: (context) => ActionDetail(actionLog: a)));
+                  builder: (context) => ActionDetail(
+                        actionLog: a,
+                        cameras: widget.cameras,
+                      )));
           setState(() {
             //-- result est une copie de a. On doit donc "recharger" a avec les valeurs modifiées.
             a.updateFrom(result);
@@ -515,8 +520,13 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void Function() onTileTap(ActionLog a) {
     return () async {
-      ActionLog result = await Navigator.push(context,
-          MaterialPageRoute(builder: (context) => ActionDetail(actionLog: a)));
+      ActionLog result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => ActionDetail(
+                    actionLog: a,
+                    cameras: widget.cameras,
+                  )));
       setState(() {
         //-- result est une copie de a. On doit donc "recharger" a avec les valeurs modifiées.
         a.updateFrom(result);

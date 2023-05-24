@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:developer';
 
+import 'package:flutter/foundation.dart';
+import 'package:flutter_guid/flutter_guid.dart';
 import 'package:http/http.dart' as http;
 import 'constants.dart';
 import 'action_log.dart';
@@ -104,5 +106,26 @@ class ApiService {
       log(e.toString());
     }
     return false;
+  }
+
+  Future<String> postPicture(Uint8List imageBytes) async {
+    try {
+      final url = Uri.parse(ApiConstants.baseUrl + ApiConstants.photoEndPoint);
+      var request = http.MultipartRequest('POST', url);
+      request.files.add(http.MultipartFile.fromBytes('file', imageBytes,
+          filename: Guid.newGuid.toString()));
+
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
+      if (response.statusCode == 200) {
+        dynamic result = jsonDecode(response.body);
+        final String fileUrl =
+            "https://storage.googleapis.com${result['pathname']}";
+        return fileUrl;
+      }
+    } catch (e) {
+      log(e.toString());
+    }
+    return "";
   }
 }

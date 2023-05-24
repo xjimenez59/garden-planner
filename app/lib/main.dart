@@ -1,12 +1,21 @@
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'home.dart';
 
-void main() {
-  runApp(const MyApp());
+Future<void> main() async {
+// Ensure that plugin services are initialized so that `availableCameras()`
+  // can be called before `runApp()`
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Obtain a list of the available cameras on the device.
+  final cameras = await availableCameras();
+
+  runApp(MyApp(cameras: cameras));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({super.key, required this.cameras});
+  final List<CameraDescription> cameras;
 
   // This widget is the root of your application.
   @override
@@ -25,7 +34,7 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: 'Garden Planner Home'),
+      home: MyHomePage(title: 'Garden Planner Home', cameras: cameras),
     );
   }
 }

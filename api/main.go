@@ -26,5 +26,7 @@ func main() {
 	router.GET("/tags", controllers.GetTags)
 	router.GET("/lieux", controllers.GetLieux)
 
+	router.POST("/photo", controllers.HandleFileUploadToBucket)
+
 	router.Run("0.0.0.0:8081")
 }

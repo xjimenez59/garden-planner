@@ -1,8 +1,12 @@
 // ignore_for_file: prefer_const_constructors
 
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:app/action_log.dart';
+import 'package:app/take_picture.dart';
+import 'package:camera/camera.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'api_service.dart';
@@ -13,8 +17,10 @@ import 'utils.dart';
 
 class ActionDetail extends StatefulWidget {
   final ActionLog actionLog;
+  final List<CameraDescription> cameras;
 
-  const ActionDetail({super.key, required this.actionLog});
+  const ActionDetail(
+      {super.key, required this.actionLog, required this.cameras});
 
   @override
   // ignore: no_logic_in_create_state
@@ -36,6 +42,7 @@ class _ActionDetail extends State<ActionDetail> {
   TextEditingController lieuInput = TextEditingController();
 
   ActionLog actionLog;
+  String imagePath = "";
 
   _ActionDetail({required this.actionLog});
 
@@ -191,13 +198,21 @@ class _ActionDetail extends State<ActionDetail> {
         controller: notesInput,
         minLines: 3,
         maxLines: 5,
-        decoration:
-            const InputDecoration(labelText: "Notes" //label text of field
-                ),
+        decoration: InputDecoration(
+            suffixIcon: IconButton(
+              onPressed: onPictureTap,
+              icon: Icon(Icons.add_a_photo_rounded),
+            ),
+            labelText: "Notes" //label text of field
+            ),
         onSubmitted: (value) {
           actionLog.notes = value;
         },
       ),
+      Padding(
+        padding: EdgeInsets.all(12),
+        child: imagePath == "" ? null : Image.network(imagePath),
+      )
     ]);
 
     String pageTitle =
@@ -300,6 +315,17 @@ class _ActionDetail extends State<ActionDetail> {
         actionLog.lieu = result;
         lieuInput.text = result;
       }
+    });
+  }
+
+  void onPictureTap() async {
+    final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) =>
+                TakePictureScreen(camera: widget.cameras.first)));
+    setState(() {
+      imagePath = result;
     });
   }
 
