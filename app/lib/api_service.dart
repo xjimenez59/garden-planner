@@ -19,8 +19,8 @@ class ApiService {
       }
     } catch (e) {
       log(e.toString());
-      return [];
     }
+    return [];
   }
 
   Future<List<Legume>?> getLegumes() async {
@@ -33,8 +33,8 @@ class ApiService {
       }
     } catch (e) {
       log(e.toString());
-      return [];
     }
+    return [];
   }
 
   Future<List<String>?> getTags() async {
@@ -47,8 +47,8 @@ class ApiService {
       }
     } catch (e) {
       log(e.toString());
-      return [];
     }
+    return [];
   }
 
   Future<List<String>?> getLieux() async {
@@ -61,8 +61,8 @@ class ApiService {
       }
     } catch (e) {
       log(e.toString());
-      return [];
     }
+    return [];
   }
 
   Future<int?> postLogs(List<ActionLog> logs) async {
@@ -75,8 +75,8 @@ class ApiService {
       }
     } catch (e) {
       log(e.toString());
-      return 0;
     }
+    return 0;
   }
 
   Future<String?> postLog(ActionLog a) async {
@@ -96,7 +96,7 @@ class ApiService {
   Future<bool> deleteLog(String id) async {
     try {
       var url =
-          Uri.parse(ApiConstants.baseUrl + ApiConstants.logEndpoint + "/$id");
+          Uri.parse("${ApiConstants.baseUrl}${ApiConstants.logEndpoint}/$id");
       var response = await http.delete(url);
       if (response.statusCode == 200) {
         dynamic result = jsonDecode(response.body);

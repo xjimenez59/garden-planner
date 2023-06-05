@@ -37,6 +37,10 @@ services:
     image: garden-planner-webapp
     ports:
       - "8080:80"
+      - "8083:443"
+    volumes:
+      # https : les certificats doivent être déposés sur l'hôte dans /opt/certs/
+      - /opt/certs/:/etc/nginx/ssl/:ro
 
 
 volumes:

@@ -37,6 +37,9 @@ services:
       target: raspberry   # debug, windows ou raspberry
     ports:
       - "8080:80"
+      - "8083:443"
+    volumes:
+      - ./nginx/conf/:/etc/nginx/conf.d/:ro  
 
 volumes:
   garden-planner-volume:

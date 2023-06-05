@@ -54,13 +54,13 @@ FROM --platform=$BUILDPLATFORM alpine as raspberry-base
 FROM raspberry-base as raspberry 
 COPY --from=raspberry-pi-build /opt/app/api/bin/garden-planner-api /usr/local/bin/
 
+
 # Expose port to the outside world
 EXPOSE 8081
+EXPOSE 443
 
 # Run the executable
 ENTRYPOINT ["garden-planner-api"]
-
-
 
 
 

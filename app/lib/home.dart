@@ -306,7 +306,7 @@ class ActionListTile extends StatelessWidget {
               Expanded(
                 flex: 1,
                 child: Text(
-                  "${actionLog.action} - ${actionLog.legume} ${actionLog.qte > 0 ? '(${actionLog.qte})' : actionLog.poids > 0 ? '(${actionLog.poids}g)' : ''}",
+                  "${actionLog.action} - ${actionLog.legume} ${actionLog.poids > 0 ? '(${actionLog.poids}g)' : actionLog.qte > 0 ? '(${actionLog.qte})' : ''}",
                   textAlign: TextAlign.start,
                   overflow: TextOverflow.clip,
                   style: TextStyle(
@@ -364,7 +364,7 @@ class ActionListTile extends StatelessWidget {
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title, required this.cameras});
+  const MyHomePage({super.key, required this.title});
 
   // This widget is the home page of your application. It is stateful, meaning
   // that it has a State object (defined below) that contains fields that affect
@@ -376,7 +376,6 @@ class MyHomePage extends StatefulWidget {
   // always marked "final".
 
   final String title;
-  final List<CameraDescription> cameras;
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -501,10 +500,7 @@ class _MyHomePageState extends State<MyHomePage> {
           ActionLog result = await Navigator.push(
               context,
               MaterialPageRoute(
-                  builder: (context) => ActionDetail(
-                        actionLog: a,
-                        cameras: widget.cameras,
-                      )));
+                  builder: (context) => ActionDetail(actionLog: a)));
           setState(() {
             //-- result est une copie de a. On doit donc "recharger" a avec les valeurs modifiées.
             a.updateFrom(result);
@@ -520,17 +516,14 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void Function() onTileTap(ActionLog a) {
     return () async {
-      ActionLog result = await Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) => ActionDetail(
-                    actionLog: a,
-                    cameras: widget.cameras,
-                  )));
-      setState(() {
-        //-- result est une copie de a. On doit donc "recharger" a avec les valeurs modifiées.
-        a.updateFrom(result);
-      });
+      ActionLog? result = await Navigator.push(context,
+          MaterialPageRoute(builder: (context) => ActionDetail(actionLog: a)));
+      if (result != null) {
+        setState(() {
+          //-- result est une copie de a. On doit donc "recharger" a avec les valeurs modifiées.
+          a.updateFrom(result);
+        });
+      }
     };
   }
 

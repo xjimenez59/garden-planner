@@ -1,12 +1,10 @@
 // ignore_for_file: prefer_const_constructors
 
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:app/action_log.dart';
 import 'package:app/take_picture.dart';
 import 'package:camera/camera.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'api_service.dart';
@@ -17,10 +15,8 @@ import 'utils.dart';
 
 class ActionDetail extends StatefulWidget {
   final ActionLog actionLog;
-  final List<CameraDescription> cameras;
 
-  const ActionDetail(
-      {super.key, required this.actionLog, required this.cameras});
+  const ActionDetail({super.key, required this.actionLog});
 
   @override
   // ignore: no_logic_in_create_state
@@ -52,8 +48,8 @@ class _ActionDetail extends State<ActionDetail> {
     dateInput.text = dateFormat(actionLog.dateAction);
     legumeInput.text = actionLog.legume;
     varieteInput.text = actionLog.variete;
-    quantiteInput.text = actionLog.qte.toString();
-    poidsInput.text = actionLog.poids.toString();
+    quantiteInput.text = (actionLog.qte > 0) ? actionLog.qte.toString() : "";
+    poidsInput.text = (actionLog.poids > 0) ? actionLog.poids.toString() : "";
     notesInput.text = actionLog.notes;
     lieuInput.text = actionLog.lieu;
 
@@ -121,7 +117,7 @@ class _ActionDetail extends State<ActionDetail> {
             const InputDecoration(labelText: "quantité" //label text of field
                 ),
 
-        onSubmitted: (value) {
+        onChanged: (value) {
           int intVal = int.parse(value);
           if (widget.actionLog.qte != intVal) {
             setState(() {
@@ -138,7 +134,7 @@ class _ActionDetail extends State<ActionDetail> {
         decoration: const InputDecoration(
             labelText: "poids (en grammes)" //label text of field
             ),
-        onSubmitted: (value) {
+        onChanged: (value) {
           int intVal = int.parse(value);
           if (widget.actionLog.poids != intVal) {
             setState(() {
@@ -205,8 +201,13 @@ class _ActionDetail extends State<ActionDetail> {
             ),
             labelText: "Notes" //label text of field
             ),
-        onSubmitted: (value) {
+        onChanged: (value) {
           actionLog.notes = value;
+          if (value != widget.actionLog.notes) {
+            setState(() {
+              actionLog.isModified = true;
+            });
+          }
         },
       ),
       Padding(
@@ -293,7 +294,7 @@ class _ActionDetail extends State<ActionDetail> {
       if (widget.actionLog.dateAction != pickedDate) {
         actionLog.isModified = true;
       }
-
+      actionLog.dateAction = pickedDate;
       String formattedDate = dateFormat(pickedDate);
       setState(() {
         dateInput.text = formattedDate; //set output date to TextField value.
@@ -319,13 +320,17 @@ class _ActionDetail extends State<ActionDetail> {
   }
 
   void onPictureTap() async {
-    final result = await Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (context) =>
-                TakePictureScreen(camera: widget.cameras.first)));
-    setState(() {
-      imagePath = result;
+    // Ensure that plugin services are initialized
+    WidgetsFlutterBinding.ensureInitialized();
+
+    await availableCameras().then((value) async {
+      final result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => TakePictureScreen(cameras: value)));
+      setState(() {
+        imagePath = result;
+      });
     });
   }
 
@@ -370,11 +375,11 @@ class _ActionDetail extends State<ActionDetail> {
   Future<List<String>> _getActions(dynamic param) async {
     List<String> result = [
       "Semis",
-      "Semis pleine terre",
       "Repiquage",
+      "Récolte",
+      "Semis pleine terre",
       "Plantation",
       "Déparasitage",
-      "Récolte",
       "Photo / Notes"
     ];
     return result;
@@ -414,9 +419,7 @@ class _ActionDetail extends State<ActionDetail> {
   Future<List<String>> _getTags(dynamic param) async {
     List<String>? result;
     result = (await ApiService().getTags());
-    if (result == null) {
-      result = [];
-    }
+    result ??= [];
 
     return result;
   }
@@ -424,9 +427,7 @@ class _ActionDetail extends State<ActionDetail> {
   Future<int> _postLogs(List<ActionLog> logs) async {
     int? result;
     result = (await ApiService().postLogs(logs));
-    if (result == null) {
-      result = 0;
-    }
+    result ??= 0;
 
     return result;
   }

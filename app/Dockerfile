@@ -71,5 +71,8 @@ RUN flutter build web
 FROM  --platform=$BUILDPLATFORM arm64v8/nginx:1.21.1-alpine as raspberry
 COPY --from=build-rpi /app/build/web /usr/share/nginx/html
 
+# acces https. les certificats doivent etre deposes sur le serveur hôte dans un volume accessible
+COPY ./nginx.conf /etc/nginx/conf.d/garden-planner.conf
+
 # Expose port to the outside world
 EXPOSE 80
