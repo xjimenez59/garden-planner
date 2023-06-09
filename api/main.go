@@ -27,6 +27,7 @@ func main() {
 	router.GET("/lieux", controllers.GetLieux)
 
 	router.POST("/photo", controllers.HandleFileUploadToBucket)
+	router.DELETE("/photo/:id", controllers.DeleteBucketObject)
 
 	router.Run("0.0.0.0:8081")
 }

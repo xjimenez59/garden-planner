@@ -38,7 +38,6 @@ class _ActionDetail extends State<ActionDetail> {
   TextEditingController lieuInput = TextEditingController();
 
   ActionLog actionLog;
-  String imagePath = "";
 
   _ActionDetail({required this.actionLog});
 
@@ -194,12 +193,7 @@ class _ActionDetail extends State<ActionDetail> {
         controller: notesInput,
         minLines: 3,
         maxLines: 5,
-        decoration: InputDecoration(
-            suffixIcon: IconButton(
-              onPressed: onPictureTap,
-              icon: Icon(Icons.add_a_photo_rounded),
-            ),
-            labelText: "Notes" //label text of field
+        decoration: InputDecoration(labelText: "Notes" //label text of field
             ),
         onChanged: (value) {
           actionLog.notes = value;
@@ -210,10 +204,31 @@ class _ActionDetail extends State<ActionDetail> {
           }
         },
       ),
-      Padding(
-        padding: EdgeInsets.all(12),
-        child: imagePath == "" ? null : Image.network(imagePath),
-      )
+      Row(children: [
+        // image count in the list
+        // or length of the list
+        Text("${actionLog.photos.length} photos"),
+        SizedBox(width: 45),
+        // icon button to add
+        // the image to the list
+        ElevatedButton.icon(
+          icon: Icon(Icons.add_a_photo),
+          label: Text("Ajouter une photo"),
+          // when pressed call
+          // the add method
+          onPressed: onPictureTap,
+        )
+      ]),
+      for (var img in actionLog.photos)
+        Dismissible(
+            key: Key(img),
+            onDismissed: onPhotoDismissed(img),
+            background: Container(
+                color: Colors.red.shade100, margin: EdgeInsets.only(bottom: 0)),
+            child: Padding(
+              padding: EdgeInsets.all(12),
+              child: Image.network(img),
+            ))
     ]);
 
     String pageTitle =
@@ -329,7 +344,8 @@ class _ActionDetail extends State<ActionDetail> {
           MaterialPageRoute(
               builder: (context) => TakePictureScreen(cameras: value)));
       setState(() {
-        imagePath = result;
+        actionLog.isModified = true;
+        actionLog.photos.add(result);
       });
     });
   }
@@ -440,5 +456,17 @@ class _ActionDetail extends State<ActionDetail> {
     } else {}
 
     return result;
+  }
+
+  void Function(DismissDirection direction) onPhotoDismissed(String img) {
+    return (DismissDirection direction) async {
+      bool deleted = await ApiService().deletePicture(img);
+      if (deleted) {
+        setState(() {
+          actionLog.isModified = true;
+          actionLog.photos.remove(img);
+        });
+      }
+    };
   }
 }

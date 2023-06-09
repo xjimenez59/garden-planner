@@ -128,4 +128,20 @@ class ApiService {
     }
     return "";
   }
+
+  Future<bool> deletePicture(String img) async {
+    try {
+      var id = Uri.parse(img).pathSegments.last;
+      var url =
+          Uri.parse("${ApiConstants.baseUrl}${ApiConstants.photoEndPoint}/$id");
+      var response = await http.delete(url);
+      if (response.statusCode == 200) {
+        dynamic result = jsonDecode(response.body);
+        return true;
+      }
+    } catch (e) {
+      log(e.toString());
+    }
+    return false;
+  }
 }

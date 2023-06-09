@@ -1,10 +1,12 @@
 package controllers
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
 	"net/url"
+	"path"
 
 	"cloud.google.com/go/storage"
 	"github.com/gin-gonic/gin"
@@ -30,10 +32,7 @@ const jactezCredentials = ` {
 	"universe_domain": "googleapis.com"
  }`
 
-// HandleFileUploadToBucket uploads file to bucket
-func HandleFileUploadToBucket(c *gin.Context) {
-	bucket := "jactez01" //your bucket name
-
+func getNewGoogleStorageClient(c *gin.Context) (*storage.Client, context.Context, error) {
 	var err error
 
 	ctx := appengine.NewContext(c.Request)
@@ -42,6 +41,18 @@ func HandleFileUploadToBucket(c *gin.Context) {
 	json.Unmarshal([]byte(jactezCredentials), o)
 
 	storageClient, err = storage.NewClient(ctx, option.WithCredentialsJSON([]byte(jactezCredentials)))
+	return storageClient, ctx, err
+
+}
+
+// HandleFileUploadToBucket uploads file to bucket
+func HandleFileUploadToBucket(c *gin.Context) {
+	bucket := "jactez01" //your bucket name
+
+	var err error
+	var ctx context.Context
+	storageClient, ctx, err = getNewGoogleStorageClient(c)
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": err.Error(),
@@ -93,3 +104,64 @@ func HandleFileUploadToBucket(c *gin.Context) {
 		"pathname": u.EscapedPath(),
 	})
 }
+
+func DeleteBucketObject(c *gin.Context) {
+	bucket := "jactez01" //your bucket name
+	var bucketObject string = c.Param("id")
+
+	var err error
+	var ctx context.Context
+	storageClient, ctx, err = getNewGoogleStorageClient(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": err.Error(),
+			"error":   true,
+		})
+		return
+	}
+	defer storageClient.Close()
+
+	o := storageClient.Bucket(bucket).Object(path.Base(bucketObject))
+	if err := o.Delete(ctx); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": err.Error(),
+			"error":   true,
+		})
+		return
+	}
+
+}
+
+/*
+// deleteFile removes specified object.
+func deleteFile(w io.Writer, bucket, object string) error {
+	// bucket := "bucket-name"
+	// object := "object-name"
+	ctx := context.Background()
+	client, err := storage.NewClient(ctx)
+	if err != nil {
+		return fmt.Errorf("storage.NewClient: %w", err)
+	}
+	defer client.Close()
+
+	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
+	defer cancel()
+
+	o := client.Bucket(bucket).Object(object)
+
+	// Optional: set a generation-match precondition to avoid potential race
+	// conditions and data corruptions. The request to delete the file is aborted
+	// if the object's generation number does not match your precondition.
+	attrs, err := o.Attrs(ctx)
+	if err != nil {
+		return fmt.Errorf("object.Attrs: %w", err)
+	}
+	o = o.If(storage.Conditions{GenerationMatch: attrs.Generation})
+
+	if err := o.Delete(ctx); err != nil {
+		return fmt.Errorf("Object(%q).Delete: %w", object, err)
+	}
+	fmt.Fprintf(w, "Blob %v deleted.\n", object)
+	return nil
+}
+*/
