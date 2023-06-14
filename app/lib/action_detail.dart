@@ -233,24 +233,26 @@ class _ActionDetail extends State<ActionDetail> {
 
     String pageTitle =
         "${actionLog.action} du ${actionLog.dateAction.day} ${monthNames[actionLog.dateAction.month]}";
-    return Scaffold(
-        appBar: AppBar(
-          title: Text(pageTitle),
-        ),
-        floatingActionButton: actionLog.isModified == false
-            ? Container()
-            : FloatingActionButton(
-                onPressed: onSaveTap,
-                tooltip: 'Enregistrer',
-                child: const Icon(Icons.save),
-              ),
-        body: Align(
-            alignment: Alignment.topCenter,
-            child: Padding(
-                padding: EdgeInsets.fromLTRB(10, 0, 5, 0),
-                child: SingleChildScrollView(
-                  child: content,
-                ))));
+    return WillPopScope(
+        onWillPop: onWillPop,
+        child: Scaffold(
+            appBar: AppBar(
+              title: Text(pageTitle),
+            ),
+            floatingActionButton: actionLog.isModified == false
+                ? Container()
+                : FloatingActionButton(
+                    onPressed: onSaveTap,
+                    tooltip: 'Enregistrer',
+                    child: const Icon(Icons.save),
+                  ),
+            body: Align(
+                alignment: Alignment.topCenter,
+                child: Padding(
+                    padding: EdgeInsets.fromLTRB(10, 0, 5, 0),
+                    child: SingleChildScrollView(
+                      child: content,
+                    )))));
   }
 
   void onSaveTap() async {
@@ -258,6 +260,19 @@ class _ActionDetail extends State<ActionDetail> {
     actionLog.id = result;
     actionLog.isModified = false;
     Navigator.pop(context, actionLog);
+  }
+
+  Future<bool> onWillPop() async {
+    final oldPhotos = widget.actionLog.photos;
+    final newPhotos = actionLog.photos;
+
+    // on suprime les photos si l'utilisateur n'enregistre pas ..
+    for (var element
+        in newPhotos.where((element) => oldPhotos.contains(element) == false)) {
+      bool deleted = await ApiService().deletePicture(element);
+    }
+
+    return true;
   }
 
   void onTagsTap() async {
@@ -396,7 +411,8 @@ class _ActionDetail extends State<ActionDetail> {
       "Semis pleine terre",
       "Plantation",
       "Déparasitage",
-      "Photo / Notes"
+      "Photo / Notes",
+      "Don"
     ];
     return result;
   }

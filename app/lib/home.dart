@@ -5,7 +5,6 @@
 // ignore_for_file: prefer_const_constructors
 
 import 'package:app/action_log.dart';
-import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 
 import 'api_service.dart';
@@ -175,7 +174,7 @@ class TopHomeFilter extends StatelessWidget {
                 flex: 1,
                 child: TextField(
                   controller: filterController,
-                  onSubmitted: onFilterChanged,
+                  onChanged: onFilterChanged,
                   textAlign: TextAlign.start,
                   style: TextStyle(
                     fontWeight: FontWeight.w400,
@@ -221,6 +220,30 @@ class TopHomeFilter extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class HorizontalImageListview extends StatelessWidget {
+  final List<String> imgUrlList;
+
+  const HorizontalImageListview({super.key, required this.imgUrlList});
+  @override
+  Widget build(BuildContext context) {
+    if (imgUrlList.isEmpty) {
+      return Container();
+    }
+    Widget result = Container(
+        height: 200,
+        child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: imgUrlList.length,
+            itemBuilder: (context, index) {
+              return Container(
+                  padding: EdgeInsets.all(10),
+                  height: 150,
+                  child: Image.network(imgUrlList[index]));
+            }));
+    return result;
   }
 }
 
@@ -317,12 +340,12 @@ class ActionListTile extends StatelessWidget {
                   ),
                 ),
               ),
-              IconButton(
+              /* IconButton(
                 icon: Icon(Icons.more_vert),
                 onPressed: () {},
                 color: Color(0xff212435),
                 iconSize: 22,
-              ),
+              ), */
             ],
           ),
         ),
@@ -350,6 +373,10 @@ class ActionListTile extends StatelessWidget {
 
     if (tagLine != null) {
       tile.children.add(tagLine);
+    }
+
+    if (actionLog.photos.isNotEmpty) {
+      tile.children.add(HorizontalImageListview(imgUrlList: actionLog.photos));
     }
 
     if (true == showDivider) {
@@ -423,8 +450,10 @@ class _MyHomePageState extends State<MyHomePage> {
           .where((a) => a
               .toJson()
               .toString()
+              .withoutDiacriticalMarks
               .toLowerCase()
-              .contains(filterController.text.toLowerCase()))
+              .contains(
+                  filterController.text.withoutDiacriticalMarks.toLowerCase()))
           .toList();
       filteredActionLogs.sort((a, b) => b.dateAction.compareTo(a.dateAction));
     }

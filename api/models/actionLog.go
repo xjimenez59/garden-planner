@@ -87,6 +87,16 @@ func SaveLogs(ctx context.Context, logs []ActionLog) (updsertedLogsCount int, er
 	return int(results.UpsertedCount), err
 }
 
+func GetLog(ctx context.Context, id primitive.ObjectID) (result ActionLog) {
+
+	logsCollection := config.DB.Collection("actionLog")
+	filter := bson.D{{"_id", id}}
+	var found *mongo.SingleResult
+	found = logsCollection.FindOne(ctx, filter)
+	found.Decode(&result)
+	return result
+}
+
 func DeleteLog(ctx context.Context, id primitive.ObjectID) (err error) {
 
 	logsCollection := config.DB.Collection("actionLog")

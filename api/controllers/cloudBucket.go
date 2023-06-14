@@ -132,6 +132,22 @@ func DeleteBucketObject(c *gin.Context) {
 
 }
 
+func DeleteBucketObjects(c *gin.Context, imgList []string) {
+	bucket := "jactez01" //your bucket name
+
+	var err error
+	var ctx context.Context
+	storageClient, ctx, err = getNewGoogleStorageClient(c)
+	defer storageClient.Close()
+	if err == nil {
+		for _, img := range imgList {
+			o := storageClient.Bucket(bucket).Object(path.Base(img))
+			o.Delete(ctx)
+		}
+	}
+
+}
+
 /*
 // deleteFile removes specified object.
 func deleteFile(w io.Writer, bucket, object string) error {

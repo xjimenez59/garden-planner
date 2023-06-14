@@ -100,12 +100,16 @@ func DeleteLog(c *gin.Context) {
 		return
 	}
 
+	a := models.GetLog(ctx, objId)
+
 	err = models.DeleteLog(ctx, objId)
 	if err != nil {
 		c.IndentedJSON(http.StatusNotModified, err)
 		return
 	}
 
+	DeleteBucketObjects(c, a.Photos)
+	fmt.Println(a.Photos)
 	c.IndentedJSON(http.StatusOK, map[string]string{"_id": id})
 }
 
