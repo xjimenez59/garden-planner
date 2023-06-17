@@ -4,6 +4,8 @@
 
 import 'dart:convert';
 
+import 'package:app/utils.dart';
+
 //ActionLog actionLogFromJson(String str) => ActionLog.fromJson(json.decode(str));
 
 List<ActionLog> actionLogFromJson(String str) =>
@@ -79,6 +81,15 @@ class ActionLog {
         "photos": List<dynamic>.from(photos.map((x) => x)),
         "tags": List<dynamic>.from(tags.map((x) => x)),
       };
+
+  String toFilterableString() {
+    String res;
+
+    res =
+        "$jardin ${dateFormat(dateAction)} $action $statut $lieu $legume $variete $qte $poids $notes ${tags.toString()}}";
+    res = res.withoutDiacriticalMarks.toLowerCase();
+    return res;
+  }
 
   void updateFrom(ActionLog a) {
     isModified = a.isModified;

@@ -447,13 +447,8 @@ class _MyHomePageState extends State<MyHomePage> {
       filteredActionLogs = actionLogs;
     } else {
       filteredActionLogs = actionLogs
-          .where((a) => a
-              .toJson()
-              .toString()
-              .withoutDiacriticalMarks
-              .toLowerCase()
-              .contains(
-                  filterController.text.withoutDiacriticalMarks.toLowerCase()))
+          .where((a) => a.toFilterableString().contains(
+              filterController.text.withoutDiacriticalMarks.toLowerCase()))
           .toList();
       filteredActionLogs.sort((a, b) => b.dateAction.compareTo(a.dateAction));
     }
