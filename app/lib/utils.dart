@@ -21,6 +21,17 @@ String dateFormat(DateTime date) {
   return strDate;
 }
 
+String weightFormat(int g) {
+  String res = "";
+  if (g >= 1000) {
+    double kg = g / 1000;
+    res = "${kg.toStringAsFixed(1)} kg";
+  } else if (g > 0) {
+    res = "${g} g";
+  }
+  return res;
+}
+
 int weekNum(DateTime date) {
   int weeknum =
       (date.difference(DateTime.utc(date.year, 1, 1)).inDays / 7).ceil() + 1;

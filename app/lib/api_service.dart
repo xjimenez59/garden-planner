@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:developer';
 
+import 'package:app/recolte_model.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_guid/flutter_guid.dart';
 import 'package:http/http.dart' as http;
@@ -57,6 +58,20 @@ class ApiService {
       var response = await http.get(url);
       if (response.statusCode == 200) {
         List<String> result = List<String>.from(jsonDecode(response.body));
+        return result;
+      }
+    } catch (e) {
+      log(e.toString());
+    }
+    return [];
+  }
+
+  Future<List<Recolte>?> getRecoltes() async {
+    try {
+      var url = Uri.parse(ApiConstants.baseUrl + ApiConstants.recoltesEndPoint);
+      var response = await http.get(url);
+      if (response.statusCode == 200) {
+        List<Recolte> result = RecolteFromJson(response.body);
         return result;
       }
     } catch (e) {

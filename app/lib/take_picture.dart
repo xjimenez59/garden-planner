@@ -19,6 +19,8 @@ class TakePictureScreenState extends State<TakePictureScreen> {
   double _minAvailableZoom = 1.0;
   double _maxAvailableZoom = 1.0;
   double _currentZoomLevel = 1.0;
+  bool _isRearCameraSelected = true;
+  bool _isImageUploading = false;
 
   @override
   void initState() {
@@ -42,7 +44,7 @@ class TakePictureScreenState extends State<TakePictureScreen> {
           ? Column(
               children: [
                 AspectRatio(
-                    aspectRatio: 1 / _controller!.value.aspectRatio,
+                    aspectRatio: 1 / _controller.value.aspectRatio,
                     child: Stack(children: [
                       CameraPreview(_controller),
                       Padding(
@@ -99,24 +101,63 @@ class TakePictureScreenState extends State<TakePictureScreen> {
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    InkWell(
-                                      onTap: takePicture,
-                                      child: Stack(
-                                        alignment: Alignment.center,
-                                        children: [
-                                          Icon(
-                                            Icons.circle,
-                                            color: Colors.white38,
-                                            size: 80,
+                                    //------ changement d'objectif
+                                    widget.cameras!.length < 2
+                                        ? Container()
+                                        : InkWell(
+                                            onTap: () {
+                                              onNewCameraSelected(
+                                                  widget.cameras![
+                                                      _isRearCameraSelected
+                                                          ? 1
+                                                          : 0]);
+                                              setState(() {
+                                                _isRearCameraSelected =
+                                                    !_isRearCameraSelected;
+                                              });
+                                            },
+                                            child: Stack(
+                                              alignment: Alignment.center,
+                                              children: [
+                                                Icon(
+                                                  Icons.circle,
+                                                  color: Colors.black38,
+                                                  size: 60,
+                                                ),
+                                                Icon(
+                                                  _isRearCameraSelected
+                                                      ? Icons.camera_front
+                                                      : Icons.camera_rear,
+                                                  color: Colors.white,
+                                                  size: 30,
+                                                ),
+                                              ],
+                                            ),
                                           ),
-                                          Icon(
-                                            Icons.circle,
-                                            color: Colors.white,
-                                            size: 65,
-                                          ),
-                                        ],
-                                      ),
-                                    )
+                                    //------ déclencheur
+                                    _isImageUploading
+                                        ? CircularProgressIndicator(
+                                            value: null,
+                                            semanticsLabel: 'Image uploading',
+                                          )
+                                        : InkWell(
+                                            onTap: takePicture,
+                                            child: Stack(
+                                              alignment: Alignment.center,
+                                              children: [
+                                                Icon(
+                                                  Icons.circle,
+                                                  color: Colors.white38,
+                                                  size: 80,
+                                                ),
+                                                Icon(
+                                                  Icons.circle,
+                                                  color: Colors.white,
+                                                  size: 65,
+                                                ),
+                                              ],
+                                            ),
+                                          )
                                   ],
                                 )
                               ]))
@@ -183,6 +224,7 @@ class TakePictureScreenState extends State<TakePictureScreen> {
   takePicture() async {
     // Take the Picture in a try / catch block. If anything goes wrong,
     // catch the error.
+
     try {
       // Ensure that the camera is initialized.
       await _initializeControllerFuture;
@@ -204,10 +246,57 @@ class TakePictureScreenState extends State<TakePictureScreen> {
       print(e);
     }
   }
-}
 
-Future<String> uploadImage(XFile image) async {
-  final imageBytes = await image.readAsBytes();
-  String result = await ApiService().postPicture(imageBytes);
-  return result;
+  void onNewCameraSelected(CameraDescription cameraDescription) async {
+    final previousCameraController = _controller;
+
+    final CameraController cameraController = CameraController(
+      cameraDescription,
+      ResolutionPreset.medium,
+      imageFormatGroup: ImageFormatGroup.jpeg,
+    );
+
+    try {
+//      await previousCameraController.dispose();
+    } catch (e) {}
+
+    if (mounted) {
+      setState(() {
+        _controller = cameraController;
+      });
+    }
+
+    // Update UI if controller updated
+    cameraController.addListener(() {
+      if (mounted) setState(() {});
+    });
+
+    try {
+      await cameraController.initialize();
+      await Future.wait([
+        cameraController
+            .getMaxZoomLevel()
+            .then((value) => _maxAvailableZoom = value),
+        cameraController
+            .getMinZoomLevel()
+            .then((value) => _minAvailableZoom = value),
+      ]);
+    } on CameraException catch (e) {
+      print('Error initializing camera: $e');
+    }
+
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  Future<String> uploadImage(XFile image) async {
+    setState(() {
+      _isImageUploading = true;
+    });
+    final imageBytes = await image.readAsBytes();
+    String result = await ApiService().postPicture(imageBytes);
+    _isImageUploading = false;
+    return result;
+  }
 }
