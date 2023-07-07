@@ -8,32 +8,65 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+type RecolteAnnee struct {
+	Annee int `bson: "annee"`
+	Poids int `bson: "poids"`
+	Qte   int `bson: "qte"`
+}
+
 type Recolte struct {
 	Legume string
-	Poids  int
-	Qte    int
+	Annees []RecolteAnnee `bson: "annees"`
 }
 
 // extrait le referentiel des legumes à partir des "actionLog" saisis
 func GetRecoltes(ctx context.Context) (result []Recolte, err error) {
+	const moisMaxRecolte = 3
 	result = make([]Recolte, 0)
 
-	matchStage := bson.D{{"$match", bson.D{{"action", "Récolte"}}}}
+	matchStage := bson.D{{"$match", bson.M{"action": "Récolte"}}}
 
-	groupStage := bson.D{
+	year02Stage := bson.D{{"$addFields", bson.M{
+		"annee": bson.D{{"$toInt", bson.D{{"$substrBytes", bson.A{"$dateAction", 0, 4}}}}},
+		"mois":  bson.D{{"$toInt", bson.D{{"$substrBytes", bson.A{"$dateAction", 5, 2}}}}},
+	}}}
+	year03Stage := bson.D{{"$set", bson.M{"anneeRecolte": bson.D{{"$add", []interface{}{
+		"$annee",
+		bson.D{{"$cond", []interface{}{
+			bson.D{{"$lte", []interface{}{"$mois", moisMaxRecolte}}},
+			-1,
+			0},
+		}},
+	},
+	}}}}}
+
+	groupStageAnnee := bson.D{
 		{
 			"$group", bson.D{
 				{
 					"_id", bson.D{
-						{"famille", "$famille"},
 						{"legume", "$legume"},
-						//	{"variete", "$variete"},
+						{"annee", "$anneeRecolte"},
 					},
 				},
-				{"famille", bson.D{{"$first", "$famille"}}},
 				{"legume", bson.D{{"$first", "$legume"}}},
+				{"annee", bson.D{{"$first", "$anneeRecolte"}}},
 				{"poids", bson.D{{"$sum", "$poids"}}},
 				{"qte", bson.D{{"$sum", "$qte"}}},
+			},
+		},
+	}
+
+	groupStageLegume := bson.D{
+		{
+			"$group", bson.D{
+				{
+					"_id", bson.D{
+						{"legume", "$legume"},
+					},
+				},
+				{"legume", bson.D{{"$first", "$legume"}}},
+				{"annees", bson.D{{"$addToSet", bson.D{{"annee", "$annee"}, {"poids", "$poids"}, {"qte", "$qte"}}}}},
 			},
 		},
 	}
@@ -46,16 +79,19 @@ func GetRecoltes(ctx context.Context) (result []Recolte, err error) {
 		},
 	}
 
-	cursor, err := config.DB.Collection("actionLog").Aggregate(ctx, mongo.Pipeline{matchStage, groupStage, sortStage})
+	cursor, err := config.DB.Collection("actionLog").Aggregate(ctx, mongo.Pipeline{
+		matchStage,
+		year02Stage, year03Stage,
+		groupStageAnnee,
+		groupStageLegume,
+		sortStage})
 	if err != nil {
 		return nil, err
 	}
 
 	var data []struct {
-		//		Famille string `bson: "famille"`
-		Legume string `bson: "legume"`
-		Poids  int    `bson: "poids"`
-		Qte    int    `bson: "qte"`
+		Legume string         `bson: "legume"`
+		Annees []RecolteAnnee `bson: "annees"`
 	}
 
 	if cursor.All(ctx, &data) != nil {
@@ -64,8 +100,7 @@ func GetRecoltes(ctx context.Context) (result []Recolte, err error) {
 	for _, v := range data {
 		result = append(result, Recolte{
 			Legume: v.Legume,
-			Poids:  v.Poids,
-			Qte:    v.Qte,
+			Annees: v.Annees,
 		})
 	}
 	return result, nil

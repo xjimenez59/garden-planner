@@ -40,7 +40,7 @@ func PostLog(c *gin.Context) {
 		return
 	}
 
-	actionLog, err = dtoToActionLog(postedDTO)
+	actionLog, err = postedDTO.ToActionLog()
 	if err != nil {
 		c.IndentedJSON(http.StatusNotAcceptable, err)
 		return
@@ -70,7 +70,7 @@ func PostLogs(c *gin.Context) {
 
 	for _, v := range postedDTO {
 		var a models.ActionLog
-		a, err = dtoToActionLog(v)
+		a, err = v.ToActionLog()
 		if err != nil {
 			c.IndentedJSON(http.StatusNotAcceptable, err)
 			return
@@ -139,44 +139,4 @@ func GetLieux(c *gin.Context) {
 	}
 
 	c.IndentedJSON(http.StatusOK, lieux)
-}
-
-func dtoToActionLog(d dto.ActionLogDTO) (a models.ActionLog, err error) {
-	a = models.ActionLog{}
-	if d.ID == "" {
-		a.ID = primitive.NilObjectID
-	} else {
-		a.ID, err = primitive.ObjectIDFromHex(d.ID)
-		if err != nil {
-			return a, err
-		}
-	}
-
-	if d.ParentId == "" {
-		a.ParentId = primitive.NilObjectID
-	} else {
-		a.ParentId, err = primitive.ObjectIDFromHex(d.ParentId)
-		if err != nil {
-			return a, err
-		}
-	}
-	var dateAction time.Time
-	dateAction, err = time.Parse("2006-01-02", d.DateAction)
-	if err != nil {
-		return a, err
-	}
-	a.Jardin = d.Jardin
-	a.DateAction = primitive.NewDateTimeFromTime(dateAction)
-	a.Action = d.Action
-	a.Statut = d.Statut
-	a.Lieu = d.Lieu
-	a.Legume = d.Legume
-	a.Variete = d.Variete
-	a.Qte = d.Qte
-	a.Poids = d.Poids
-	a.Notes = d.Notes
-	a.Photos = d.Photos
-	a.Tags = d.Tags
-
-	return a, nil
 }

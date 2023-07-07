@@ -8,6 +8,10 @@ package dto
 
 import (
 	"encoding/json"
+	"garden-planner/api/models"
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func UnmarshalActionLogDTO(data []byte) (ActionLogDTO, error) {
@@ -35,4 +39,44 @@ type ActionLogDTO struct {
 	Notes      string   `json:"notes"`
 	Photos     []string `json:"photos"`
 	Tags       []string `json:"tags"`
+}
+
+func (d *ActionLogDTO) ToActionLog() (a models.ActionLog, err error) {
+	a = models.ActionLog{}
+	if d.ID == "" {
+		a.ID = primitive.NilObjectID
+	} else {
+		a.ID, err = primitive.ObjectIDFromHex(d.ID)
+		if err != nil {
+			return a, err
+		}
+	}
+
+	if d.ParentId == "" {
+		a.ParentId = primitive.NilObjectID
+	} else {
+		a.ParentId, err = primitive.ObjectIDFromHex(d.ParentId)
+		if err != nil {
+			return a, err
+		}
+	}
+	var dateAction time.Time
+	dateAction, err = time.Parse("2006-01-02", d.DateAction)
+	if err != nil {
+		return a, err
+	}
+	a.Jardin = d.Jardin
+	a.DateAction = primitive.NewDateTimeFromTime(dateAction)
+	a.Action = d.Action
+	a.Statut = d.Statut
+	a.Lieu = d.Lieu
+	a.Legume = d.Legume
+	a.Variete = d.Variete
+	a.Qte = d.Qte
+	a.Poids = d.Poids
+	a.Notes = d.Notes
+	a.Photos = d.Photos
+	a.Tags = d.Tags
+
+	return a, nil
 }

@@ -21,6 +21,8 @@ func main() {
 	router.DELETE("/log/:id", controllers.DeleteLog)
 
 	router.GET("/gardens", controllers.GetGardens)
+	router.POST("/garden", controllers.PostGarden)
+
 	router.GET("/legumes", controllers.GetLegumes)
 
 	router.GET("/tags", controllers.GetTags)

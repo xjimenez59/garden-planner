@@ -42,18 +42,22 @@ class RecoltesTableau extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    Set<int> annees = {};
+    recoltes.forEach((r) {
+      r.annees.forEach((a) {
+        annees.add(a.annee);
+      });
+    });
+
+    List<DataColumn> columns = [
+      DataColumn(label: Text('Légume')),
+    ];
+    for (var a in annees) {
+      columns.add(DataColumn(label: Text(a.toString())));
+    }
+
     Widget res = DataTable(
-        columns: const <DataColumn>[
-          DataColumn(
-            label: Text('Légume'),
-          ),
-          DataColumn(
-            label: Text('Poids'),
-          ),
-          DataColumn(
-            label: Text('Qté'),
-          ),
-        ],
+        columns: columns,
         rows: List<DataRow>.generate(
           recoltes.length,
           (int index) => DataRow(
@@ -69,10 +73,14 @@ class RecoltesTableau extends StatelessWidget {
               }
               return null; // Use default value for other states and odd rows.
             }),
-            cells: <DataCell>[
+            cells: [
               DataCell(Text(recoltes[index].legume)),
-              DataCell(Text(weightFormat(recoltes[index].poids))),
-              DataCell(Text(recoltes[index].qte.toString())),
+              for (int a in annees)
+                DataCell(Text(weightFormat(recoltes[index]
+                    .annees
+                    .firstWhere((e) => e.annee == a,
+                        orElse: () => RecolteAnnee(annee: a, poids: 0, qte: 0))
+                    .poids))),
             ],
 /*             selected: selected[index],
             onSelectChanged: (bool? value) {

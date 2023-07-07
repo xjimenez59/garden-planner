@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:developer';
 
+import 'package:app/garden_model.dart';
 import 'package:app/recolte_model.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_guid/flutter_guid.dart';
@@ -22,6 +23,34 @@ class ApiService {
       log(e.toString());
     }
     return [];
+  }
+
+  Future<List<Garden>?> getGardens() async {
+    try {
+      var url = Uri.parse(ApiConstants.baseUrl + ApiConstants.jardinsEndPoint);
+      var response = await http.get(url);
+      if (response.statusCode == 200) {
+        List<Garden> model = GardenFromJson(response.body);
+        return model;
+      }
+    } catch (e) {
+      log(e.toString());
+    }
+    return [];
+  }
+
+  Future<String?> postGarden(Garden a) async {
+    try {
+      var url = Uri.parse(ApiConstants.baseUrl + ApiConstants.jardinEndPoint);
+      var response = await http.post(url, body: jsonEncode(a));
+      if (response.statusCode == 201) {
+        dynamic result = jsonDecode(response.body);
+        return result["_id"];
+      }
+    } catch (e) {
+      log(e.toString());
+    }
+    return null;
   }
 
   Future<List<Legume>?> getLegumes() async {

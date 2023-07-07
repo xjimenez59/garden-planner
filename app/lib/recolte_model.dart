@@ -1,34 +1,29 @@
-// To parse this JSON data, do
-//
-//     final actionLog = actionLogFromJson(jsonString);
-
 import 'dart:convert';
 
-List<Recolte> RecolteFromJson(String str) =>
-    List<Recolte>.from(json.decode(str).map((x) => Recolte.fromJson(x)));
-
-String RecolteToJson(Recolte data) => json.encode(data.toJson());
-
-class Recolte {
-  Recolte({
-    required this.legume,
-    required this.poids,
-    required this.qte,
-  });
-
-  String legume;
+class RecolteAnnee {
+  int annee;
   int poids;
   int qte;
 
-  factory Recolte.fromJson(Map<String, dynamic> json) => Recolte(
-        legume: json["Legume"],
-        poids: json["Poids"],
-        qte: json["Qte"],
-      );
+  RecolteAnnee({required this.annee, required this.poids, required this.qte});
 
-  Map<String, dynamic> toJson() => {
-        "Legume": legume,
-        "Poids": poids,
-        "Qte": qte,
-      };
+  factory RecolteAnnee.fromJson(Map<String, dynamic> json) => RecolteAnnee(
+      annee: json["Annee"], poids: json["Poids"], qte: json["Qte"]);
 }
+
+class Recolte {
+  String legume;
+  List<RecolteAnnee> annees;
+
+  Recolte({required this.legume, required this.annees});
+
+  factory Recolte.fromJson(Map<String, dynamic> json) {
+    var listeDynamic = json["Annees"] as List;
+    List<RecolteAnnee> annees =
+        listeDynamic.map((a) => RecolteAnnee.fromJson(a)).toList();
+    return Recolte(legume: json["Legume"], annees: annees);
+  }
+}
+
+List<Recolte> RecolteFromJson(String str) =>
+    List<Recolte>.from(json.decode(str).map((x) => Recolte.fromJson(x)));

@@ -5,6 +5,8 @@
 // ignore_for_file: prefer_const_constructors
 
 import 'package:app/action_log.dart';
+import 'package:app/garden_model.dart';
+import 'package:app/gardens_view.dart';
 import 'package:app/stats_view.dart';
 import 'package:flutter/material.dart';
 import 'package:app/logs_view.dart';
@@ -32,6 +34,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   late List<ActionLog> actionLogs = [];
+  late List<Garden> jardins = [];
   TextEditingController filterController = TextEditingController();
   int currentPage = 0;
   @override
@@ -47,6 +50,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _getData() async {
+    jardins = (await ApiService().getGardens())!;
     actionLogs = (await ApiService().getLogs())!;
     Future.delayed(const Duration(seconds: 1)).then((value) => setState(() {}));
   }
@@ -106,8 +110,10 @@ class _MyHomePageState extends State<MyHomePage> {
 
                     if (index == 0) {
                       results.add(TopHomeFilter(
+                          jardins: jardins,
                           filterController: filterController,
-                          onFilterChanged: _onFilterChanged));
+                          onFilterChanged: _onFilterChanged,
+                          onSelectGardenTap: onSelectGardenTap));
                     } else {
                       var a = filteredActionLogs![index - 1];
 
@@ -177,6 +183,14 @@ class _MyHomePageState extends State<MyHomePage> {
         });
       }
     };
+  }
+
+  void onSelectGardenTap() async {
+    ActionLog? result = await Navigator.push(context,
+        MaterialPageRoute(builder: (context) => GardensView(gardens: jardins)));
+    if (result != null) {
+      setState(() {});
+    }
   }
 
   void Function(DismissDirection direction) onTileDismissed(int index) {

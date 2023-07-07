@@ -1,4 +1,5 @@
 import 'package:app/action_log.dart';
+import 'package:app/garden_model.dart';
 import 'package:app/utils.dart';
 import 'package:flutter/material.dart';
 
@@ -87,9 +88,14 @@ class DaySeparator extends StatelessWidget {
 class TopHomeFilter extends StatelessWidget {
   final TextEditingController filterController;
   final void Function(String text) onFilterChanged;
+  final List<Garden> jardins;
+  final void Function() onSelectGardenTap;
 
   const TopHomeFilter(
-      {required this.filterController, required this.onFilterChanged});
+      {required this.jardins,
+      required this.filterController,
+      required this.onFilterChanged,
+      required this.onSelectGardenTap});
 
   @override
   Widget build(BuildContext context) {
@@ -109,53 +115,6 @@ class TopHomeFilter extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisSize: MainAxisSize.max,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisSize: MainAxisSize.max,
-            children: [
-              Padding(
-                padding: EdgeInsets.fromLTRB(5, 0, 0, 0),
-                child: Icon(
-                  Icons.location_on,
-                  color: Color(0xff212435),
-                  size: 18,
-                ),
-              ),
-              Expanded(
-                flex: 1,
-                child: Container(
-                    width: 130,
-                    height: 50,
-                    padding: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                    decoration: BoxDecoration(
-                      color: Color(0x00ffffff),
-                      borderRadius: BorderRadius.circular(0),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton(
-                        value: "Potager Jactez",
-                        items: ["Potager Jactez", "Jardin partagé Tropark"]
-                            .map<DropdownMenuItem<String>>((String value) {
-                          return DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(value),
-                          );
-                        }).toList(),
-                        style: TextStyle(
-                          color: Color(0xff000000),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                          fontStyle: FontStyle.normal,
-                        ),
-                        onChanged: (value) {},
-                        elevation: 8,
-                        isExpanded: true,
-                      ),
-                    )),
-              ),
-            ],
-          ),
           Row(
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -206,6 +165,8 @@ class TopHomeFilter extends StatelessWidget {
                   ),
                 ),
               ),
+              IconButton(
+                  onPressed: onSelectGardenTap, icon: Icon(Icons.location_pin))
             ],
           ),
         ],

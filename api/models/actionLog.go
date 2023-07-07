@@ -27,12 +27,15 @@ type ActionLog struct {
 	Tags       []string           `json:"tags" bson:"tags"`
 }
 
-// Renvoie un slice avec toutes les actions, dans l'ordre chronologique inverse (plus récentes en premier)
 func GetLogs(ctx context.Context) (result []ActionLog, err error) {
+	return GetLogsFiltered(ctx, bson.D{})
+}
+
+// Renvoie un slice avec toutes les actions, dans l'ordre chronologique inverse (plus récentes en premier)
+func GetLogsFiltered(ctx context.Context, filter bson.D) (result []ActionLog, err error) {
 	result = make([]ActionLog, 0)
 	var data *mongo.Cursor
 
-	filter := bson.D{}
 	opts := options.Find().SetSort(bson.D{{Key: "dateAction", Value: -1}, {Key: "legume", Value: 1}})
 
 	data, err = config.DB.Collection("actionLog").Find(ctx, filter, opts)
@@ -43,6 +46,16 @@ func GetLogs(ctx context.Context) (result []ActionLog, err error) {
 		return nil, err
 	}
 	return result, nil
+}
+
+func GetLog(ctx context.Context, id primitive.ObjectID) (result ActionLog) {
+
+	logsCollection := config.DB.Collection("actionLog")
+	filter := bson.D{{"_id", id}}
+	var found *mongo.SingleResult
+	found = logsCollection.FindOne(ctx, filter)
+	found.Decode(&result)
+	return result
 }
 
 func (a *ActionLog) Save(ctx context.Context) (id primitive.ObjectID, err error) {
@@ -85,16 +98,6 @@ func SaveLogs(ctx context.Context, logs []ActionLog) (updsertedLogsCount int, er
 	results, err := logsCollection.BulkWrite(ctx, models)
 
 	return int(results.UpsertedCount), err
-}
-
-func GetLog(ctx context.Context, id primitive.ObjectID) (result ActionLog) {
-
-	logsCollection := config.DB.Collection("actionLog")
-	filter := bson.D{{"_id", id}}
-	var found *mongo.SingleResult
-	found = logsCollection.FindOne(ctx, filter)
-	found.Decode(&result)
-	return result
 }
 
 func DeleteLog(ctx context.Context, id primitive.ObjectID) (err error) {

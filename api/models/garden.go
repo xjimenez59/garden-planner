@@ -11,9 +11,13 @@ import (
 )
 
 type Garden struct {
-	ID    primitive.ObjectID `bson:"_id"`
-	Nom   string             `bson:"nom"`
-	Notes string             `bson:"notes"`
+	ID             primitive.ObjectID `bson:"_id"`
+	Nom            string             `bson:"nom"`
+	Notes          string             `bson:"notes"`
+	MoisFinRecolte int                `bson:"moisFinRecolte"`
+	MoisFinSemis   int                `bson:"moisFinSemis"`
+	Localisation   string             `bson:"localisation"`
+	Surface        int                `bson:"surface"`
 }
 
 func GetGardens(ctx context.Context) (result []Garden, err error) {
@@ -30,8 +34,40 @@ func GetGardens(ctx context.Context) (result []Garden, err error) {
 	return result, nil
 }
 
-/* var gardenDemoData = []Garden{
-	{ID: "1", Nom: "Potager Jactez", Notes: ""},
-	{ID: "2", Nom: "Jardin Partagé Tropark", Notes: ""},
+func GetGarden(ctx context.Context, id primitive.ObjectID) (result Garden) {
+
+	gardensCollection := config.DB.Collection("garden")
+	filter := bson.D{{"_id", id}}
+	var found *mongo.SingleResult
+	found = gardensCollection.FindOne(ctx, filter)
+	found.Decode(&result)
+	return result
 }
-*/
+
+func (g *Garden) Save(ctx context.Context) (id primitive.ObjectID, err error) {
+	gardensCollection := config.DB.Collection("garden")
+	id = primitive.NilObjectID
+	if g.ID.IsZero() {
+		g.ID = primitive.NewObjectID()
+		var result *mongo.InsertOneResult
+		result, err = gardensCollection.InsertOne(ctx, g)
+		if err == nil {
+			id = result.InsertedID.(primitive.ObjectID)
+		}
+	} else {
+		filter := bson.D{{"_id", g.ID}}
+		_, err = gardensCollection.ReplaceOne(ctx, filter, g)
+		if err == nil {
+			id = g.ID
+		}
+	}
+	return id, err
+}
+
+func DeleteGarden(ctx context.Context, id primitive.ObjectID) (err error) {
+
+	gardensCollection := config.DB.Collection("garden")
+	filter := bson.D{{"_id", id}}
+	_, err = gardensCollection.DeleteOne(ctx, filter)
+	return err
+}
