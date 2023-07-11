@@ -27,7 +27,7 @@ String weightFormat(int g) {
     double kg = g / 1000;
     res = "${kg.toStringAsFixed(1)} kg";
   } else if (g > 0) {
-    res = "${g} g";
+    res = "$g g";
   }
   return res;
 }
@@ -40,9 +40,7 @@ int weekNum(DateTime date) {
 
 extension DateTools on DateTime {
   bool sameDayAs(DateTime other) {
-    return (this.year == other.year) &&
-        (this.month == other.month) &&
-        (this.day == other.day);
+    return (year == other.year) && (month == other.month) && (day == other.day);
   }
 }
 
@@ -52,7 +50,7 @@ extension DiacriticsAwareString on String {
   static const nonDiacritics =
       'AAAAAAaaaaaaOOOOOOOooooooEEEEEeeeeeeCCccDDdIIIIiiiiLlUUUUUuuuuuNNnnRrSsTtYYyyZz';
 
-  String get withoutDiacriticalMarks => this.splitMapJoin('',
+  String get withoutDiacriticalMarks => splitMapJoin('',
       onNonMatch: (char) => char.isNotEmpty && diacritics.contains(char)
           ? nonDiacritics[diacritics.indexOf(char)]
           : char);

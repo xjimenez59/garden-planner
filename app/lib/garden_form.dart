@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 class GardenForm extends StatefulWidget {
   final Garden? garden;
-  GardenForm({super.key, this.garden});
+  const GardenForm({super.key, this.garden});
 
   @override
   State<StatefulWidget> createState() {

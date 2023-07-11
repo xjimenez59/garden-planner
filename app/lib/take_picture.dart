@@ -70,8 +70,7 @@ class TakePictureScreenState extends State<TakePictureScreen> {
                                           setState(() {
                                             _currentZoomLevel = value;
                                           });
-                                          await _controller!
-                                              .setZoomLevel(value);
+                                          await _controller.setZoomLevel(value);
                                         },
                                       ),
                                     ),

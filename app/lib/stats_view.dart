@@ -43,14 +43,14 @@ class RecoltesTableau extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Set<int> annees = {};
-    recoltes.forEach((r) {
-      r.annees.forEach((a) {
+    for (var r in recoltes) {
+      for (var a in r.annees) {
         annees.add(a.annee);
-      });
-    });
+      }
+    }
 
     List<DataColumn> columns = [
-      DataColumn(label: Text('Légume')),
+      const DataColumn(label: Text('Légume')),
     ];
     for (var a in annees) {
       columns.add(DataColumn(label: Text(a.toString())));
