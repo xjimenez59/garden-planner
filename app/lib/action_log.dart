@@ -17,7 +17,7 @@ class ActionLog {
   ActionLog({
     this.id = "",
     this.parentId = "",
-    this.jardin = "",
+    this.jardinId = "",
     required this.dateAction,
     this.action = "",
     this.statut = "",
@@ -34,7 +34,7 @@ class ActionLog {
   bool isModified = false;
   String id;
   String parentId;
-  String jardin;
+  String jardinId;
   DateTime dateAction;
   String action;
   String statut;
@@ -50,7 +50,7 @@ class ActionLog {
   factory ActionLog.fromJson(Map<String, dynamic> json) => ActionLog(
         id: json["_id"],
         parentId: json["_parentId"],
-        jardin: json["jardin"],
+        jardinId: json["jardinId"],
         dateAction: DateTime.parse(json["dateAction"]),
         action: json["action"],
         statut: json["statut"],
@@ -67,7 +67,7 @@ class ActionLog {
   Map<String, dynamic> toJson() => {
         "_id": id,
         "_parentId": parentId,
-        "jardin": jardin,
+        "jardinId": jardinId,
         "dateAction":
             "${dateAction.year.toString().padLeft(4, '0')}-${dateAction.month.toString().padLeft(2, '0')}-${dateAction.day.toString().padLeft(2, '0')}",
         "action": action,
@@ -86,7 +86,7 @@ class ActionLog {
     String res;
 
     res =
-        "$jardin ${dateFormat(dateAction)} $action $statut $lieu $legume $variete $qte $poids $notes ${tags.toString()}}";
+        "${dateFormat(dateAction)} $action $statut $lieu $legume $variete $qte $poids $notes ${tags.toString()}}";
     res = res.withoutDiacriticalMarks.toLowerCase();
     return res;
   }
@@ -95,7 +95,7 @@ class ActionLog {
     isModified = a.isModified;
     id = a.id;
     parentId = a.parentId;
-    jardin = a.jardin;
+    jardinId = a.jardinId;
     dateAction = a.dateAction;
     action = a.action;
     statut = a.statut;

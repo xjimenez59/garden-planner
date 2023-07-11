@@ -13,7 +13,7 @@ import (
 type ActionLog struct {
 	ID         primitive.ObjectID `json:"_id" bson:"_id,omitempty"`
 	ParentId   primitive.ObjectID `json:"_parentId" bson:"_parentId,omitempty"`
-	Jardin     string             `json:"jardin" bson:"jardin"`
+	JardinId   primitive.ObjectID `json:"jardinId" bson:"jardinId"`
 	DateAction primitive.DateTime `json:"dateAction" bson:"dateAction"`
 	Action     string             `json:"action" bson:"action"`
 	Statut     string             `json:"statut" bson:"statut"`
@@ -27,8 +27,12 @@ type ActionLog struct {
 	Tags       []string           `json:"tags" bson:"tags"`
 }
 
-func GetLogs(ctx context.Context) (result []ActionLog, err error) {
-	return GetLogsFiltered(ctx, bson.D{})
+func GetLogs(ctx context.Context, gardenId primitive.ObjectID) (result []ActionLog, err error) {
+	filter := bson.D{}
+	if !gardenId.IsZero() {
+		filter = bson.D{{"jardinId", gardenId}}
+	}
+	return GetLogsFiltered(ctx, filter)
 }
 
 // Renvoie un slice avec toutes les actions, dans l'ordre chronologique inverse (plus récentes en premier)
@@ -142,4 +146,18 @@ func GetLieux(ctx context.Context) (result []string, err error) {
 		}
 	}
 	return result, nil
+}
+
+func UpdateLogsSetGarden(ctx context.Context, newValue primitive.ObjectID) (updated int, err error) {
+	filter := bson.D{}
+	logsCollection := config.DB.Collection("actionLog")
+	update := bson.M{"$set": bson.M{"jardinId": newValue}, "$unset": bson.M{"jardin": ""}}
+
+	var result *mongo.UpdateResult
+	result, err = logsCollection.UpdateMany(ctx, filter, update)
+	if err != nil {
+		return 0, err
+	}
+	return int(result.ModifiedCount), nil
+
 }

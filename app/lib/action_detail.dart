@@ -269,7 +269,7 @@ class _ActionDetail extends State<ActionDetail> {
     // on suprime les photos si l'utilisateur n'enregistre pas ..
     for (var element
         in newPhotos.where((element) => oldPhotos.contains(element) == false)) {
-      bool deleted = await ApiService().deletePicture(element);
+      await ApiService().deletePicture(element);
     }
 
     return true;

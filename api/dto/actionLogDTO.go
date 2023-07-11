@@ -7,27 +7,16 @@
 package dto
 
 import (
-	"encoding/json"
 	"garden-planner/api/models"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func UnmarshalActionLogDTO(data []byte) (ActionLogDTO, error) {
-	var r ActionLogDTO
-	err := json.Unmarshal(data, &r)
-	return r, err
-}
-
-func (r *ActionLogDTO) Marshal() ([]byte, error) {
-	return json.Marshal(r)
-}
-
 type ActionLogDTO struct {
 	ID         string   `json:"_id"`
 	ParentId   string   `json:"_parentId"`
-	Jardin     string   `json:"jardin"`
+	JardinId   string   `json:"jardinId"`
 	DateAction string   `json:"dateAction"`
 	Action     string   `json:"action"`
 	Statut     string   `json:"statut"`
@@ -39,6 +28,24 @@ type ActionLogDTO struct {
 	Notes      string   `json:"notes"`
 	Photos     []string `json:"photos"`
 	Tags       []string `json:"tags"`
+}
+
+func (d *ActionLogDTO) FromGardenModel(a models.ActionLog) {
+	d.ID = a.ID.String()
+	d.ParentId = a.ParentId.String()
+	d.JardinId = a.JardinId.String()
+	d.Action = a.Action
+	d.DateAction = a.DateAction.Time().Format("2006-01-02")
+	d.Legume = a.Legume
+	d.Lieu = a.Lieu
+	d.Notes = a.Notes
+	d.Photos = a.Photos
+	d.Poids = a.Poids
+	d.Qte = a.Qte
+	d.Statut = a.Statut
+	d.Tags = a.Tags
+	d.Variete = a.Variete
+
 }
 
 func (d *ActionLogDTO) ToActionLog() (a models.ActionLog, err error) {
@@ -60,12 +67,21 @@ func (d *ActionLogDTO) ToActionLog() (a models.ActionLog, err error) {
 			return a, err
 		}
 	}
+
+	if d.JardinId == "" {
+		a.JardinId = primitive.NilObjectID
+	} else {
+		a.JardinId, err = primitive.ObjectIDFromHex(d.JardinId)
+		if err != nil {
+			return a, err
+		}
+	}
+
 	var dateAction time.Time
 	dateAction, err = time.Parse("2006-01-02", d.DateAction)
 	if err != nil {
 		return a, err
 	}
-	a.Jardin = d.Jardin
 	a.DateAction = primitive.NewDateTimeFromTime(dateAction)
 	a.Action = d.Action
 	a.Statut = d.Statut

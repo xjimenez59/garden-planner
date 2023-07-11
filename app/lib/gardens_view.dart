@@ -3,10 +3,10 @@ import 'package:app/garden_model.dart';
 import 'package:flutter/material.dart';
 
 class GardensView extends StatefulWidget {
-  Garden? activeGarden;
-  List<Garden> gardens;
+  final Garden? activeGarden;
+  final List<Garden> gardens;
 
-  GardensView({super.key, required this.gardens, this.activeGarden});
+  const GardensView({super.key, required this.gardens, this.activeGarden});
 
   @override
   State<StatefulWidget> createState() {
@@ -56,6 +56,7 @@ class _GardensView extends State<GardensView> {
     setState(() {
       activeGarden = g;
     });
+    Navigator.pop(context, g);
   }
 
   void onNewGardenTap() async {

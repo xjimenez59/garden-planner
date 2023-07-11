@@ -11,9 +11,9 @@ import 'action_log.dart';
 import 'legumes_model.dart';
 
 class ApiService {
-  Future<List<ActionLog>?> getLogs() async {
+  Future<List<ActionLog>?> getLogs(Garden jardin) async {
     try {
-      var url = Uri.parse(ApiConstants.baseUrl + ApiConstants.logsEndpoint);
+      var url = Uri.parse(ApiConstants.baseUrl + "/garden/${jardin.ID}/logs");
       var response = await http.get(url);
       if (response.statusCode == 200) {
         List<ActionLog> model = actionLogFromJson(response.body);

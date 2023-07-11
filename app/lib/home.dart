@@ -4,6 +4,8 @@
 
 // ignore_for_file: prefer_const_constructors
 
+import 'dart:js_interop';
+
 import 'package:app/action_log.dart';
 import 'package:app/garden_model.dart';
 import 'package:app/gardens_view.dart';
@@ -37,6 +39,7 @@ class _MyHomePageState extends State<MyHomePage> {
   late List<Garden> jardins = [];
   TextEditingController filterController = TextEditingController();
   int currentPage = 0;
+  Garden? selectedGarden;
   @override
   void initState() {
     super.initState();
@@ -51,7 +54,10 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _getData() async {
     jardins = (await ApiService().getGardens())!;
-    actionLogs = (await ApiService().getLogs())!;
+    if (jardins.isNotEmpty) {
+      selectedGarden = jardins.first;
+      actionLogs = (await ApiService().getLogs(selectedGarden!))!;
+    }
     Future.delayed(const Duration(seconds: 1)).then((value) => setState(() {}));
   }
 
@@ -83,7 +89,9 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         // Here we take the value from the MyHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+        title: Text(selectedGarden.isNull
+            ? widget.title
+            : "Garden Planner - ${selectedGarden!.Nom}"),
       ),
       bottomNavigationBar: NavigationBar(
         destinations: const [
@@ -147,29 +155,28 @@ class _MyHomePageState extends State<MyHomePage> {
               : currentPage == 1
                   ? ActionLogStats()
                   : Container()),
-      floatingActionButton: currentPage == 0
+      floatingActionButton: (currentPage == 0 && !selectedGarden.isNull)
           ? FloatingActionButton(
-              onPressed: () async {
-                DateTime today = DateTime.now();
-                today = DateTime(today.year, today.month, today.day);
-                ActionLog a = ActionLog(dateAction: today);
-                ActionLog result = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => ActionDetail(actionLog: a)));
-                setState(() {
-                  //-- result est une copie de a. On doit donc "recharger" a avec les valeurs modifiées.
-                  a.updateFrom(result);
-                  actionLogs.add(a);
-                  actionLogs
-                      .sort((a, b) => b.dateAction.compareTo(a.dateAction));
-                });
-              },
+              onPressed: onNewActionLogTap,
               tooltip: 'Ajouter une action',
               child: const Icon(Icons.add),
             )
           : null,
     );
+  }
+
+  void onNewActionLogTap() async {
+    DateTime today = DateTime.now();
+    today = DateTime(today.year, today.month, today.day);
+    ActionLog a = ActionLog(dateAction: today, jardinId: selectedGarden!.ID);
+    ActionLog result = await Navigator.push(context,
+        MaterialPageRoute(builder: (context) => ActionDetail(actionLog: a)));
+    setState(() {
+      //-- result est une copie de a. On doit donc "recharger" a avec les valeurs modifiées.
+      a.updateFrom(result);
+      actionLogs.add(a);
+      actionLogs.sort((a, b) => b.dateAction.compareTo(a.dateAction));
+    });
   }
 
   void Function() onTileTap(ActionLog a) {
@@ -186,9 +193,17 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void onSelectGardenTap() async {
-    ActionLog? result = await Navigator.push(context,
-        MaterialPageRoute(builder: (context) => GardensView(gardens: jardins)));
+    Garden? result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => GardensView(
+                  gardens: jardins,
+                  activeGarden: selectedGarden,
+                )));
     if (result != null) {
+      selectedGarden = result;
+
+      actionLogs = (await ApiService().getLogs(selectedGarden!))!;
       setState(() {});
     }
   }

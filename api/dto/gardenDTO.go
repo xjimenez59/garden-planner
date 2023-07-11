@@ -17,7 +17,7 @@ type GardenDTO struct {
 }
 
 func (d *GardenDTO) FromGardenModel(g models.Garden) {
-	d.ID = g.ID.String()
+	d.ID = g.ID.Hex()
 	d.Nom = g.Nom
 	d.Notes = g.Notes
 	d.MoisFinRecolte = g.MoisFinRecolte

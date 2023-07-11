@@ -13,11 +13,19 @@ import (
 )
 
 func GetLogs(c *gin.Context) {
+	var gardenId primitive.ObjectID
+
+	gardenIdStr := c.Param("gardenId")
+	if gardenIdStr == "" {
+		gardenId = primitive.NilObjectID
+	} else {
+		gardenId, _ = primitive.ObjectIDFromHex(gardenIdStr)
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	var actionLogs, err = models.GetLogs(ctx)
+	var actionLogs, err = models.GetLogs(ctx, gardenId)
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, err)
 		return
@@ -139,4 +147,29 @@ func GetLieux(c *gin.Context) {
 	}
 
 	c.IndentedJSON(http.StatusOK, lieux)
+}
+
+func UpdateLogsSetGarden(c *gin.Context) {
+	var err error
+	var valueStr string = c.Query("value")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var nbModified int
+
+	value, err := primitive.ObjectIDFromHex(valueStr)
+	if err != nil {
+		c.IndentedJSON(http.StatusNotFound, err)
+		return
+	}
+
+	nbModified, err = models.UpdateLogsSetGarden(ctx, value)
+
+	if err != nil {
+		c.IndentedJSON(http.StatusNotModified, err)
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, fmt.Sprintf("{updated: %d}", nbModified))
 }
