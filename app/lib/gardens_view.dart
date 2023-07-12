@@ -47,6 +47,7 @@ class _GardensView extends State<GardensView> {
               gardens: gardens,
               selectedGarden: activeGarden,
               onSelectGarden: onSelectGarden,
+              onEditGarden: onEditGarden,
             )));
 
     return result;
@@ -68,17 +69,31 @@ class _GardensView extends State<GardensView> {
       }
     });
   }
+
+  void onEditGarden(Garden g) async {
+    Garden? result = await Navigator.push(context,
+        MaterialPageRoute(builder: (context) => GardenForm(garden: g)));
+    setState(() {
+      if (result != null) {
+        int index = gardens.indexOf(g);
+        gardens[index].copyFrom(result);
+      }
+    });
+  }
 }
 
 class GardenListView extends StatelessWidget {
   final List<Garden> gardens;
   final Garden? selectedGarden;
   final void Function(Garden g) onSelectGarden;
+  final void Function(Garden g) onEditGarden;
+
   const GardenListView(
       {super.key,
       required this.gardens,
       required this.selectedGarden,
-      required this.onSelectGarden});
+      required this.onSelectGarden,
+      required this.onEditGarden});
 
   @override
   Widget build(BuildContext context) {
@@ -89,6 +104,7 @@ class GardenListView extends StatelessWidget {
                 garden: e,
                 isActive: e == selectedGarden,
                 onSelectGarden: onSelectGarden,
+                onEditGarden: onEditGarden,
               ))
           .toList(),
     );
@@ -99,12 +115,14 @@ class GardenCard extends StatelessWidget {
   final Garden garden;
   final bool isActive;
   final void Function(Garden g) onSelectGarden;
+  final void Function(Garden g) onEditGarden;
 
   const GardenCard(
       {super.key,
       required this.garden,
       this.isActive = false,
-      required this.onSelectGarden});
+      required this.onSelectGarden,
+      required this.onEditGarden});
 
   @override
   Widget build(BuildContext context) {
@@ -126,7 +144,9 @@ class GardenCard extends StatelessWidget {
               children: <Widget>[
                 TextButton(
                   child: const Text('MODIFIER'),
-                  onPressed: () {/* ... */},
+                  onPressed: () {
+                    onEditGarden(garden);
+                  },
                 ),
                 const SizedBox(width: 8),
                 TextButton(

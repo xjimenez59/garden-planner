@@ -27,7 +27,9 @@ class _GardenForm extends State<GardenForm> {
   @override
   void initState() {
     super.initState();
-    garden = widget.garden ?? garden;
+    if (widget.garden != null) {
+      garden = Garden.fromJson(widget.garden!.toJson()); // copie
+    }
 
     nomInput.text = garden.Nom;
     notesInput.text = garden.Notes;
@@ -65,7 +67,7 @@ class _GardenForm extends State<GardenForm> {
               keyboardType: TextInputType.number,
               decoration: InputDecoration(labelText: "Surface cultivée"),
               onChanged: (value) {
-                garden.Surface = int.parse(value);
+                garden.Surface = (value == "") ? 0 : int.parse(value);
                 refresh();
               },
             ),
@@ -75,7 +77,7 @@ class _GardenForm extends State<GardenForm> {
               decoration:
                   InputDecoration(labelText: "Mois de fin des récoltes"),
               onChanged: (value) {
-                garden.MoisFinRecolte = int.parse(value);
+                garden.MoisFinRecolte = (value == "") ? 0 : int.parse(value);
                 refresh();
               },
             ),
@@ -84,7 +86,7 @@ class _GardenForm extends State<GardenForm> {
               keyboardType: TextInputType.number,
               decoration: InputDecoration(labelText: "Mois de début des semis"),
               onChanged: (value) {
-                garden.MoisFinSemis = int.parse(value);
+                garden.MoisFinSemis = (value == "") ? 0 : int.parse(value);
                 refresh();
               },
             ),

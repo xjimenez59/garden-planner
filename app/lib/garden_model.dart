@@ -36,6 +36,16 @@ class Garden {
         "localisation": Localisation,
         "surface": Surface,
       };
+
+  copyFrom(Garden src) {
+    ID = src.ID;
+    Nom = src.Nom;
+    Notes = src.Notes;
+    MoisFinRecolte = src.MoisFinRecolte;
+    MoisFinSemis = src.MoisFinSemis;
+    Localisation = src.Localisation;
+    Surface = src.Surface;
+  }
 }
 
 List<Garden> GardenFromJson(String str) =>

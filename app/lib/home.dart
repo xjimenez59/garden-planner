@@ -204,8 +204,8 @@ class _MyHomePageState extends State<MyHomePage> {
       selectedGarden = result;
 
       actionLogs = (await ApiService().getLogs(selectedGarden!))!;
-      setState(() {});
     }
+    setState(() {});
   }
 
   void Function(DismissDirection direction) onTileDismissed(int index) {
