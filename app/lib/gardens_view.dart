@@ -1,5 +1,6 @@
 import 'package:app/garden_form.dart';
 import 'package:app/garden_model.dart';
+import 'package:app/utils.dart';
 import 'package:flutter/material.dart';
 
 class GardensView extends StatefulWidget {
@@ -137,7 +138,7 @@ class GardenCard extends StatelessWidget {
                   isActive ? const Icon(Icons.where_to_vote) : const Icon(null),
               title: Text(garden.Nom),
               subtitle: Text(
-                  "Fin récoltes : ${garden.MoisFinRecolte} - Fin semis : ${garden.MoisFinSemis}"),
+                  "Fin récoltes : ${monthNames[garden.MoisFinRecolte]} - Fin semis : ${monthNames[garden.MoisFinSemis]}"),
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,

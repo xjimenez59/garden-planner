@@ -1,5 +1,6 @@
 import 'package:app/api_service.dart';
 import 'package:app/garden_model.dart';
+import 'package:app/utils.dart';
 import 'package:flutter/material.dart';
 
 class GardenForm extends StatefulWidget {
@@ -71,24 +72,24 @@ class _GardenForm extends State<GardenForm> {
                 refresh();
               },
             ),
-            TextField(
-              controller: moisFinRecolteInput,
-              keyboardType: TextInputType.number,
+            DropdownButtonFormField(
+              items: _monthsSelectItems(),
+              value: garden.MoisFinRecolte,
+              onChanged: (value) {
+                garden.MoisFinRecolte = value!;
+                refresh();
+              },
               decoration:
                   InputDecoration(labelText: "Mois de fin des récoltes"),
-              onChanged: (value) {
-                garden.MoisFinRecolte = (value == "") ? 0 : int.parse(value);
-                refresh();
-              },
             ),
-            TextField(
-              controller: moisFinSemis,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(labelText: "Mois de début des semis"),
+            DropdownButtonFormField(
+              items: _monthsSelectItems(),
+              value: garden.MoisFinSemis,
               onChanged: (value) {
-                garden.MoisFinSemis = (value == "") ? 0 : int.parse(value);
+                garden.MoisFinSemis = value!;
                 refresh();
               },
+              decoration: InputDecoration(labelText: "Mois de fin des semis"),
             ),
             TextField(
               controller: notesInput,
@@ -144,6 +145,15 @@ class _GardenForm extends State<GardenForm> {
       result = "";
     } else {}
 
+    return result;
+  }
+
+  List<DropdownMenuItem<int>> _monthsSelectItems() {
+    List<DropdownMenuItem<int>> result = [];
+    for (var i = 1; i < monthNames.length; i++) {
+      result.add(DropdownMenuItem(
+          value: i, child: Center(child: Text(monthNames[i]))));
+    }
     return result;
   }
 }
