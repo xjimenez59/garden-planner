@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:app/utils.dart';
 import 'package:flutter/material.dart';
 
 class TagsSelector extends StatefulWidget {
@@ -57,6 +58,29 @@ class _TagsSelector extends State<TagsSelector> {
 
   @override
   Widget build(BuildContext context) {
+    List<Widget> seltagsWidget = selectedTags.map(
+      (s) {
+        return Chip(
+          elevation: 0,
+          shadowColor: Colors.teal,
+          // pressElevation: 0,
+          // backgroundColor: Colors.blue[100],
+          // shape: RoundedRectangleBorder(
+          //   borderRadius: BorderRadius.circular(7),
+          // ),
+          label: Text(s, style: TextStyle(color: Colors.blue[900])),
+          onDeleted: () {
+            setState(
+              () {
+                selectedTags.remove(s);
+                filterOptions();
+              },
+            );
+          },
+        );
+      },
+    ).toList();
+
     final content = Column(children: [
       Expanded(
           child: ListView.builder(
@@ -85,7 +109,7 @@ class _TagsSelector extends State<TagsSelector> {
         controller: editController,
         onChanged: editOnChanged,
         onSubmitted: editOnSubmit,
-        autofocus: true,
+        autofocus: false,
         focusNode: editFocusNode,
       ),
       Padding(
@@ -93,35 +117,21 @@ class _TagsSelector extends State<TagsSelector> {
         child: Wrap(
           spacing: 5,
           runSpacing: 5,
-          children: selectedTags.map(
-            (s) {
-              return Chip(
-                elevation: 0,
-                shadowColor: Colors.teal,
-                // pressElevation: 0,
-                // backgroundColor: Colors.blue[100],
-                // shape: RoundedRectangleBorder(
-                //   borderRadius: BorderRadius.circular(7),
-                // ),
-                label: Text(s, style: TextStyle(color: Colors.blue[900])),
-                onDeleted: () {
-                  setState(
-                    () {
-                      selectedTags.remove(s);
-                      filterOptions();
-                    },
-                  );
-                },
-              );
-            },
-          ).toList(),
+          children: seltagsWidget,
+          alignment: WrapAlignment.end,
         ),
       ),
+      ElevatedButton(
+          onPressed: submitTags,
+          child: Icon(Icons.check),
+          style:
+              ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(50)))
     ]);
 
     return Scaffold(
-        appBar: AppBar(title: Text(widget.title)),
-        body: Center(child: content));
+      appBar: AppBar(title: Text(widget.title)),
+      body: Center(child: content),
+    );
   }
 
   void editOnChanged(String text) {
@@ -137,9 +147,10 @@ class _TagsSelector extends State<TagsSelector> {
         //--- rien de plus
       } else {
         optionsList = optionsList
-            .where((element) => element
+            .where((element) => element.withoutDiacriticalMarks
                 .toLowerCase()
-                .contains(editController.text.toLowerCase()))
+                .contains(
+                    editController.text..withoutDiacriticalMarks.toLowerCase()))
             .toList();
       }
     });
@@ -153,11 +164,11 @@ class _TagsSelector extends State<TagsSelector> {
 
   void editOnSubmit(String text) {
     if (text == "") {
-      Navigator.pop(context, selectedTags);
+      submitTags();
     } else {
       editController.clear();
       addTag(text);
-      editFocusNode.requestFocus();
+      // editFocusNode.requestFocus();
     }
   }
 
@@ -166,5 +177,9 @@ class _TagsSelector extends State<TagsSelector> {
       selectedTags.add(value);
       filterOptions();
     });
+  }
+
+  void submitTags() {
+    Navigator.pop(context, selectedTags);
   }
 }

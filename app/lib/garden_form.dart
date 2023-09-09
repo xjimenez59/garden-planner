@@ -1,3 +1,5 @@
+// ignore_for_file: prefer_const_constructors
+
 import 'package:app/api_service.dart';
 import 'package:app/garden_model.dart';
 import 'package:app/utils.dart';

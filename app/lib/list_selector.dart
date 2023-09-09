@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:app/utils.dart';
 import 'package:flutter/material.dart';
 
 class ListSelector extends StatefulWidget {
@@ -71,7 +72,7 @@ class _ListSelector extends State<ListSelector> {
         controller: editController,
         onChanged: filterOptions,
         onSubmitted: editOnSubmit,
-        autofocus: true,
+        autofocus: false,
       ),
     ]);
 
@@ -87,8 +88,9 @@ class _ListSelector extends State<ListSelector> {
         optionsList = widget.optionsList;
       } else {
         optionsList = widget.optionsList
-            .where((element) =>
-                element.toLowerCase().contains(newValue.toLowerCase()))
+            .where((element) => element.withoutDiacriticalMarks
+                .toLowerCase()
+                .contains(newValue.withoutDiacriticalMarks.toLowerCase()))
             .toList();
       }
     });

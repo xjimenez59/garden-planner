@@ -4,8 +4,6 @@
 
 // ignore_for_file: prefer_const_constructors
 
-import 'dart:js_interop';
-
 import 'package:app/action_log.dart';
 import 'package:app/garden_model.dart';
 import 'package:app/gardens_view.dart';
@@ -89,7 +87,7 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         // Here we take the value from the MyHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
-        title: Text(selectedGarden.isNull
+        title: Text(selectedGarden == null
             ? widget.title
             : "Garden Planner - ${selectedGarden!.Nom}"),
       ),
@@ -155,7 +153,7 @@ class _MyHomePageState extends State<MyHomePage> {
               : currentPage == 1
                   ? ActionLogStats()
                   : Container()),
-      floatingActionButton: (currentPage == 0 && !selectedGarden.isNull)
+      floatingActionButton: (currentPage == 0 && selectedGarden != null)
           ? FloatingActionButton(
               onPressed: onNewActionLogTap,
               tooltip: 'Ajouter une action',

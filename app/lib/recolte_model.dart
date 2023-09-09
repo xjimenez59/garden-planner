@@ -27,3 +27,15 @@ class Recolte {
 
 List<Recolte> RecolteFromJson(String str) =>
     List<Recolte>.from(json.decode(str).map((x) => Recolte.fromJson(x)));
+
+Map<int, int> totalRecoltes(List<Recolte> recolteJardin) {
+  Map<int, int> result = {};
+
+  for (var r in recolteJardin) {
+    for (var a in r.annees) {
+      result.update(a.annee, (value) => value + a.poids,
+          ifAbsent: () => a.poids);
+    }
+  }
+  return result;
+}

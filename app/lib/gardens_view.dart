@@ -66,7 +66,7 @@ class _GardensView extends State<GardensView> {
         context, MaterialPageRoute(builder: (context) => GardenForm()));
     setState(() {
       if (result != null) {
-        gardens!.add(result);
+        gardens.add(result);
       }
     });
   }
