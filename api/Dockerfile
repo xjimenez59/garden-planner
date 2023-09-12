@@ -49,7 +49,7 @@ ARG TARGETOS=linux
 RUN GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o ./bin/garden-planner-api
 
 # Finally, copy the executable file on a fresh "minimal" distro
-FROM --platform=$BUILDPLATFORM alpine as raspberry-base
+FROM --platform=$BUILDPLATFORM arm64v8/alpine as raspberry-base
 
 FROM raspberry-base as raspberry 
 COPY --from=raspberry-pi-build /opt/app/api/bin/garden-planner-api /usr/local/bin/
