@@ -72,7 +72,7 @@ class _ListSelector extends State<ListSelector> {
         controller: editController,
         onChanged: filterOptions,
         onSubmitted: editOnSubmit,
-        autofocus: false,
+        autofocus: true,
       ),
     ]);
 
