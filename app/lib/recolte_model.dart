@@ -13,15 +13,16 @@ class RecolteAnnee {
 
 class Recolte {
   String legume;
+  String lieu;
   List<RecolteAnnee> annees;
 
-  Recolte({required this.legume, required this.annees});
+  Recolte({required this.legume, this.lieu = "", required this.annees});
 
   factory Recolte.fromJson(Map<String, dynamic> json) {
     var listeDynamic = json["Annees"] as List;
     List<RecolteAnnee> annees =
         listeDynamic.map((a) => RecolteAnnee.fromJson(a)).toList();
-    return Recolte(legume: json["Legume"], annees: annees);
+    return Recolte(legume: json["Legume"], lieu: json["Lieu"], annees: annees);
   }
 }
 

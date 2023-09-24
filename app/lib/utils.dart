@@ -21,8 +21,9 @@ String dateFormat(DateTime date) {
   return strDate;
 }
 
-String weightFormat(int g) {
+String weightFormat(int? g) {
   String res = "";
+  if (g == null) return "";
   if (g >= 1000) {
     double kg = g / 1000;
     res = "${kg.toStringAsFixed(1)} kg";

@@ -109,6 +109,21 @@ class ApiService {
     return [];
   }
 
+  Future<List<Recolte>?> getRecolteAnnuelle() async {
+    try {
+      var url = Uri.parse(
+          ApiConstants.baseUrl + ApiConstants.recolteAnnuelleEndPoint);
+      var response = await http.get(url);
+      if (response.statusCode == 200) {
+        List<Recolte> result = RecolteFromJson(response.body);
+        return result;
+      }
+    } catch (e) {
+      log(e.toString());
+    }
+    return [];
+  }
+
   Future<int?> postLogs(List<ActionLog> logs) async {
     try {
       var url = Uri.parse(ApiConstants.baseUrl + ApiConstants.logsEndpoint);

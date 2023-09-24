@@ -41,6 +41,7 @@ dependencies:
 
   http: ^0.13.4
   flutter_guid: ^0.3.1
+  flutter_expandable_table: ^2.0.1
 
 dev_dependencies:
   flutter_test:

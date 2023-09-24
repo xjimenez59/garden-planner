@@ -34,6 +34,7 @@ func main() {
 	router.DELETE("/photo/:id", controllers.DeleteBucketObject)
 
 	router.GET("/recoltes", controllers.GetRecoltes)
+	router.GET("/recoltes/lieux", controllers.GetRecoltesLieux)
 
 	router.Run("0.0.0.0:8081")
 }
