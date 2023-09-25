@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"garden-planner/api/config"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -28,15 +29,19 @@ type ActionLog struct {
 }
 
 func GetLogs(ctx context.Context, gardenId primitive.ObjectID) (result []ActionLog, err error) {
-	filter := bson.D{}
+	filter := bson.M{}
 	if !gardenId.IsZero() {
-		filter = bson.D{{"jardinId", gardenId}}
+		filter["jardinId"] = gardenId
 	}
+
+	pastDate := primitive.NewDateTimeFromTime(time.Now().AddDate(0, -15, 0))
+	filter["dateAction"] = bson.M{"$gte": pastDate}
+
 	return GetLogsFiltered(ctx, filter)
 }
 
 // Renvoie un slice avec toutes les actions, dans l'ordre chronologique inverse (plus récentes en premier)
-func GetLogsFiltered(ctx context.Context, filter bson.D) (result []ActionLog, err error) {
+func GetLogsFiltered(ctx context.Context, filter bson.M) (result []ActionLog, err error) {
 	result = make([]ActionLog, 0)
 	var data *mongo.Cursor
 
