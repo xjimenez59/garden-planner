@@ -1,19 +1,34 @@
 import 'package:flutter/material.dart';
+
+import 'package:flutter_localizations/flutter_localizations.dart';
+
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide EmailAuthProvider;
+import 'package:firebase_ui_auth/firebase_ui_auth.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:firebase_ui_localizations/firebase_ui_localizations.dart';
+
 import 'home.dart';
 
-main() {
+Future<void> main() async {
 // Ensure that plugin services are initialized so that `availableCameras()`
   // can be called before `runApp()`
-//  WidgetsFlutterBinding.ensureInitialized();
+  WidgetsFlutterBinding.ensureInitialized();
 
   // Obtain a list of the available cameras on the device.
 //  final cameras = await availableCameras();
 
-  runApp(const MyApp());
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  MyApp({super.key});
+
+  final providers = [EmailAuthProvider()];
 
   // This widget is the root of your application.
   @override
@@ -21,18 +36,59 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Garden Planner',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
         primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: 'Garden Planner Home'),
+      locale: Locale("fr"),
+      localizationsDelegates: [
+        FirebaseUILocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: [
+        Locale('fr'), // French
+        Locale('en'), // English
+        Locale('es'), // Spanish
+      ],
+      initialRoute:
+          FirebaseAuth.instance.currentUser == null ? '/sign-in' : '/',
+      routes: {
+        '/sign-in': SignIn,
+        '/profile': (context) {
+          return ProfileScreen(
+            providers: providers,
+            actions: [
+              SignedOutAction((context) {
+                Navigator.pushReplacementNamed(context, '/sign-in');
+              }),
+            ],
+          );
+        },
+        '/': (context) {
+          if (FirebaseAuth.instance.currentUser == null) {
+            return SignIn(context);
+          } else {
+            return const MyHomePage(title: 'Garden Planner Home');
+          }
+        }
+      },
+    );
+  }
+
+  Widget SignIn(context) {
+    return SignInScreen(
+      providers: providers,
+      actions: [
+        AuthStateChangeAction<SignedIn>((context, state) {
+          Navigator.pushReplacementNamed(context, '/');
+        }),
+      ],
+      headerBuilder: (context, constraints, shrinkOffset) {
+        return AppBar(
+          title: Text("Garden Planner"),
+          leading: Icon(Icons.login),
+        );
+      },
     );
   }
 }

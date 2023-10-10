@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "490039520157",
+    "project_id": "gardenplanner-d69b4",
+    "storage_bucket": "gardenplanner-d69b4.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:490039520157:android:6619805300b23fd58fdd74",
+        "android_client_info": {
+          "package_name": "com.example.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "490039520157-pudl2tcbpsc3sru9ci7caqqtuhakctlf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAJxNRK-AQnhansw0Lg1BLpgMw1tmqIBu0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "490039520157-pudl2tcbpsc3sru9ci7caqqtuhakctlf.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "490039520157-cunjeulrka10fug3kv7b2h6daf8d1gbp.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.app"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
