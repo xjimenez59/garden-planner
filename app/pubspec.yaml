@@ -47,6 +47,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   intl: any
+  firebase_ui_oauth_google: ^1.2.10
 
 dev_dependencies:
   flutter_test:

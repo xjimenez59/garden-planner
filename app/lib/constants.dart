@@ -14,4 +14,6 @@ class ApiConstants {
   static String recolteAnnuelleEndPoint = '/recoltes/lieux';
   static String jardinsEndPoint = '/gardens';
   static String jardinEndPoint = '/garden';
+  static String GOOGLE_CLIENT_ID =
+      '490039520157-pudl2tcbpsc3sru9ci7caqqtuhakctlf.apps.googleusercontent.com';
 }
