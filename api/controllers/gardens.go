@@ -16,7 +16,9 @@ func GetGardens(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	var gardens, err = models.GetGardens(ctx)
+	var userID string = c.Request.Header.Get("Authorization")
+
+	var gardens, err = models.GetGardens(ctx, userID)
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, err)
 		return

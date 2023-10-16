@@ -10,6 +10,11 @@ import (
 	//	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+type GardenRole struct {
+	UserID string `bson:"userId"`
+	Role   string `bson:"role"`
+}
+
 type Garden struct {
 	ID             primitive.ObjectID `bson:"_id"`
 	Nom            string             `bson:"nom"`
@@ -18,13 +23,14 @@ type Garden struct {
 	MoisFinSemis   int                `bson:"moisFinSemis"`
 	Localisation   string             `bson:"localisation"`
 	Surface        int                `bson:"surface"`
+	Jardiniers     []GardenRole       `bson:"jardiniers"`
 }
 
-func GetGardens(ctx context.Context) (result []Garden, err error) {
+func GetGardens(ctx context.Context, userID string) (result []Garden, err error) {
 	result = make([]Garden, 0)
 	var data *mongo.Cursor
 
-	data, err = config.DB.Collection("garden").Find(ctx, bson.D{})
+	data, err = config.DB.Collection("garden").Find(ctx, bson.D{{"jardiniers.userId", userID}})
 	if err != nil {
 		return nil, err
 	}

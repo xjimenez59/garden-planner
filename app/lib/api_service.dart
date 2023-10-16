@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:app/garden_model.dart';
 import 'package:app/recolte_model.dart';
@@ -10,7 +11,21 @@ import 'constants.dart';
 import 'action_log.dart';
 import 'legumes_model.dart';
 
+import 'package:firebase_auth/firebase_auth.dart';
+
 class ApiService {
+  Map<String, String> getHeaders() {
+    return {
+      HttpHeaders.authorizationHeader:
+          '${FirebaseAuth.instance.currentUser?.uid}',
+//      HttpHeaders.accessControlAllowOriginHeader: '*',
+//      HttpHeaders.accessControlAllowMethodsHeader:
+//          "GET,PUT,PATCH,POST,DELETE,OPTIONS",
+//      HttpHeaders.accessControlAllowHeadersHeader:
+//          "Origin,Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,locale",
+    };
+  }
+
   Future<List<ActionLog>?> getLogs(Garden jardin) async {
     try {
       var url = Uri.parse(ApiConstants.baseUrl + "/garden/${jardin.ID}/logs");
@@ -28,7 +43,7 @@ class ApiService {
   Future<List<Garden>?> getGardens() async {
     try {
       var url = Uri.parse(ApiConstants.baseUrl + ApiConstants.jardinsEndPoint);
-      var response = await http.get(url);
+      var response = await http.get(url, headers: getHeaders());
       if (response.statusCode == 200) {
         List<Garden> model = GardenFromJson(response.body);
         return model;

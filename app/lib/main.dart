@@ -37,12 +37,6 @@ Future<void> main() async {
 class MyApp extends StatelessWidget {
   MyApp({super.key});
 
-  /*  final providers = [
-    EmailAuthProvider(),
-    GoogleAuthProvider(),
-  ]; */
-
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(

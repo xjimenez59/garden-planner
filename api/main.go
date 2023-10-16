@@ -13,7 +13,16 @@ func main() {
 	config.ConnectDatabase()
 
 	router := gin.Default()
-	router.Use(cors.Default())
+	//	router.Use(cors.Default())
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:  []string{"*"},
+		AllowMethods:  []string{"GET", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"},
+		AllowHeaders:  []string{"Origin", "Content-Type", "Authorization", "locale", ""},
+		ExposeHeaders: []string{"Content-Length"},
+
+		//	AllowCredentials: true,
+		//	AllowOriginFunc: func(origin string) bool {		return true	},
+	}))
 
 	router.GET("/logs", controllers.GetLogs)
 	router.POST("/logs", controllers.PostLogs)
