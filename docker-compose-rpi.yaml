@@ -40,8 +40,8 @@ services:
       - "8083:443"
     volumes:
       # https : les certificats doivent être déposés sur l'hôte dans /opt/certs/
-      - /opt/certs/:/etc/nginx/ssl/:ro
-
+      #- /opt/certs/:/etc/nginx/ssl/:ro
+      - /etc/letsencrypt/:/etc/nginx/ssl/:ro
 
 volumes:
   garden-planner-volume:
