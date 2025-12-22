@@ -11,6 +11,7 @@ import (
 func main() {
 
 	config.ConnectDatabase()
+	defer config.CloseDatabase()
 
 	router := gin.Default()
 	//	router.Use(cors.Default())
@@ -24,7 +25,12 @@ func main() {
 		//	AllowOriginFunc: func(origin string) bool {		return true	},
 	}))
 
-	router.GET("/meteo/:site/:date", controllers.GetMeteo)
+	router.GET("/meteo/infoclimat/:site/:date", controllers.GetMeteo)
+	router.GET("/meteo/accuweather/:location/past24h", controllers.Accuweather_GetCurrent24H)
+	router.GET("/meteo/accuweather/:location/past24h/import", controllers.Accuweather_ImportCurrent24H)
+	router.GET("/meteo/accuweather/location/search", controllers.Accuweather_SearchLocations)
+	router.GET("/meteo/accuweather/location/import", controllers.Accuweather_ImportLocations)
 
 	router.Run("0.0.0.0:8082")
+
 }

@@ -8,7 +8,7 @@ import (
 	"net/http"
 )
 
-type InfoClimaStation struct {
+type InfoClimatStation struct {
 	Id        string            `json:"id"`
 	Name      string            `json:"name"`
 	Latitude  float64           `json:"latitude"`
@@ -22,7 +22,7 @@ type InfoClimatResponse struct {
 	Status   string                 `json:"status"`
 	Errors   []string               `json:"errors"`
 	Data     []string               `json:"data"`
-	Stations []InfoClimaStation     `json:"stations"`
+	Stations []InfoClimatStation    `json:"stations"`
 	Metadata map[string]string      `json:"metadata"`
 	Hourly   map[string]interface{} `json:"hourly"`
 }
@@ -41,8 +41,17 @@ type MeteoReleve struct {
 	Pluie_1h       string `json:"pluie_1h,omitempty"`
 }
 
+type SimplifiedWeather struct {
+	Site       string      `json:"site"`
+	Date       string      `json:"date"`
+	Nuit       MeteoReleve `json:"nuit"`
+	Matin      MeteoReleve `json:"matin"`
+	Apres_midi MeteoReleve `json:"apres_midi"`
+	Soir       MeteoReleve `json:"soir"`
+}
+
 // Renvoie les infos météo pour la station et la journée passés
-func GetMeteo(ctx context.Context, site string, date string) (result []MeteoReleve, err error) {
+func GetInfoClimatMeteo(ctx context.Context, site string, date string) (result []MeteoReleve, err error) {
 
 	responseData, err := callInfoClimatApi(site, date)
 	if err == nil {
@@ -62,6 +71,12 @@ func GetMeteo(ctx context.Context, site string, date string) (result []MeteoRele
 	return result, err
 }
 
+func computeSimplifiedMeteo(releves []MeteoReleve) {
+	// Compute the average temperature, pressure, humidity, wind speed, wind direction, and precipitation for
+	// the given time period.
+
+}
+
 func callInfoClimatApi(site string, date string) (responseData []byte, err error) {
 	doActualCall := false //-- false en mode "developpement" ; true pour faire les vrais appels à l'api depuis la bonne IP
 	if doActualCall {
@@ -71,12 +86,12 @@ func callInfoClimatApi(site string, date string) (responseData []byte, err error
 			responseData, err = io.ReadAll(response.Body)
 		}
 	} else {
-		responseData = getMockMeteo()
+		responseData = getInfoClimatMockData()
 	}
 	return responseData, err
 }
 
-func getMockMeteo() []byte {
+func getInfoClimatMockData() []byte {
 	stringdata := `	{
         "status": "OK",
         "errors": [],

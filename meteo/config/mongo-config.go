@@ -23,19 +23,15 @@ var mongoDbuRI = fmt.Sprintf("mongodb://%s:%s@%s:%s/?authSource=admin&readPrefer
 var DB *mongo.Database = ConnectDatabase()
 
 func ConnectDatabase() *mongo.Database {
-	client, err := mongo.NewClient(options.Client().ApplyURI(mongoDbuRI))
-	if err != nil {
-		log.Fatal(err)
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
 
-	err = client.Connect(ctx)
+	opts := options.Client().ApplyURI(mongoDbuRI)
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	client, err := mongo.Connect(ctx, opts)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal((err))
 	}
 
-	err = client.Ping(ctx, nil)
+	err = client.Ping(context.TODO(), nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -44,7 +40,10 @@ func ConnectDatabase() *mongo.Database {
 	return db
 }
 
-func GetCollection(client *mongo.Client, collectionName string) *mongo.Collection {
-	collection := client.Database(mongoDbName).Collection(collectionName)
-	return collection
+func CloseDatabase() {
+	err := DB.Client().Disconnect(context.TODO())
+	if err != nil {
+		log.Fatal(err)
+	}
+
 }

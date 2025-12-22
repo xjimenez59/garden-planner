@@ -5,11 +5,12 @@
    "version": "0.2.0",
    "configurations": [
    {
-      "name": "GO debug",
+      "name": "GO debug api x",
       "type": "go",
       "request": "launch",
       "mode": "debug",
-      "program": "api/main.go",
+      "cwd": "${workspaceFolder}/api",
+      "program": "${workspaceFolder}/api",
       "env": {
          "MONGO_HOST":"localhost",
          "MONGO_PORT":"27017",
@@ -18,6 +19,21 @@
          "MONGO_DBNAME":"garden-planner"
       }
    },
+   {
+        "name": "GO debug meteo",
+        "type": "go",
+        "request": "launch",
+        "mode": "debug",
+        "cwd": "${workspaceFolder}/meteo",
+        "program": "${workspaceFolder}/meteo",
+        "env": {
+            "MONGO_HOST":"localhost",
+            "MONGO_PORT":"27017",
+            "MONGO_USER":"root",
+            "MONGO_PWD":"zorglub",
+            "MONGO_DBNAME":"garden-planner"
+        }
+    },
    {
       "name": "Flutter (Pixel 4a connecté)",
       "program": "app/lib/main.dart",

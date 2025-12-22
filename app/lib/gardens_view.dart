@@ -143,6 +143,12 @@ class GardenCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: <Widget>[
+                IconButton(
+                    onPressed: () {},
+                    icon: Icon(
+                      Icons.people,
+                      color: Theme.of(context).primaryColor,
+                    )),
                 TextButton(
                   child: const Text('MODIFIER'),
                   onPressed: () {

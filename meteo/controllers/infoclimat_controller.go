@@ -17,7 +17,7 @@ func GetMeteo(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	var previsions, err = models.GetMeteo(ctx, site, date)
+	var previsions, err = models.GetInfoClimatMeteo(ctx, site, date)
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, err)
 		return
