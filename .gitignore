@@ -3,3 +3,5 @@ api/__debug_bin.exe
 garden-planner-webapp-arm64
 garden-planner-api-arm64
 test.mongodb
+.vscode/launch.json
+meteo/*.exe

@@ -1,71 +1,44 @@
 
-
 services:
-  mongo:
-    image: mongo
-    restart: always
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: zorglub
-      MONGO_INITDB_DATABASE: garden-planner
-    ports:
-      - "27017:27017"
-    volumes: 
-      - type: volume
-        source: garden-planner-volume
-        target: /data/db
   api:
     build:
       context: ./api
-      target: windows   # debug, windows ou raspberry
+      target: nas   # debug, windows , nas ou raspberry
     ports:
       - "8081:8081"
     environment:
-      MONGO_HOST: mongo
-      MONGO_PORT: 27017
-      MONGO_USER: root
-      MONGO_PWD: zorglub
-      MONGO_DBNAME: garden-planner
+      SQLITE_PATH: /opt/app/api/garden-planner.db
     volumes:
-      - type: volume
-        source : garden-planner-api-volume
+      - type: bind
+        source: /local/containers-data/garden-planner/api
         target: /opt/app/api
 
   webapp:
     build:
       context: ./app
-      target: windows   # debug, windows ou raspberry
+      target: nas   # debug, windows , nasou raspberry
     ports:
       - "8080:80"
       - "8083:443"
     volumes:
-      - ./nginx/conf/:/etc/nginx/conf.d/:ro  
+      - ./nginx/conf/:/etc/nginx/conf.d/:ro
 
   meteo:
     build:
       context: ./meteo
-      target: windows   # debug, windows ou raspberry
+      target: nas   # debug, windows ou raspberry
     ports:
       - "8082:8082"
     environment:
-      MONGO_HOST: mongo
-      MONGO_PORT: 27017
-      MONGO_USER: root
-      MONGO_PWD: zorglub
-      MONGO_DBNAME: garden-planner
+      SQLITE_PATH: /data/meteo.db
     volumes:
       - type: volume
-        source : garden-planner-meteo-volume
+        source: garden-planner-meteo-volume
         target: /opt/app/meteo
+      - type: bind
+        source: /local/containers-data/garden-planner/meteo-sqlite
+        target: /data
 
 volumes:
-  garden-planner-volume:
-    name: "garden-planner"
-
-  garden-planner-api-volume:
-    name: "garden-planner-api"
-
   garden-planner-meteo-volume:
     name: "garden-planner-meteo"
-  
-  

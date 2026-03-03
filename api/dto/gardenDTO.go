@@ -2,8 +2,6 @@ package dto
 
 import (
 	"garden-planner/api/models"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type GardenRoleDTO struct {
@@ -23,39 +21,32 @@ type GardenDTO struct {
 }
 
 func (d *GardenDTO) FromGardenModel(g models.Garden) {
-	d.ID = g.ID.Hex()
+	d.ID = g.ID
 	d.Nom = g.Nom
 	d.Notes = g.Notes
 	d.MoisFinRecolte = g.MoisFinRecolte
 	d.MoisFinSemis = g.MoisFinSemis
 	d.Localisation = g.Localisation
 	d.Surface = g.Surface
-
+	d.Jardiniers = make([]GardenRoleDTO, 0)
 	for _, v := range g.Jardiniers {
 		d.Jardiniers = append(d.Jardiniers, GardenRoleDTO{UserID: v.UserID, Role: v.Role})
 	}
 }
 
-func (d *GardenDTO) ToGardenModel() (g models.Garden, err error) {
-	g = models.Garden{}
-	if d.ID == "" {
-		g.ID = primitive.NilObjectID
-	} else {
-		g.ID, err = primitive.ObjectIDFromHex(d.ID)
-		if err != nil {
-			return g, err
-		}
+func (d *GardenDTO) ToGardenModel() (models.Garden, error) {
+	g := models.Garden{
+		ID:             d.ID,
+		Nom:            d.Nom,
+		Notes:          d.Notes,
+		MoisFinRecolte: d.MoisFinRecolte,
+		MoisFinSemis:   d.MoisFinSemis,
+		Localisation:   d.Localisation,
+		Surface:        d.Surface,
+		Jardiniers:     make([]models.GardenRole, 0),
 	}
-	g.Nom = d.Nom
-	g.Notes = d.Notes
-	g.MoisFinRecolte = d.MoisFinRecolte
-	g.MoisFinSemis = d.MoisFinSemis
-	g.Localisation = d.Localisation
-	g.Surface = d.Surface
-
 	for _, v := range d.Jardiniers {
 		g.Jardiniers = append(g.Jardiniers, models.GardenRole{UserID: v.UserID, Role: v.Role})
 	}
-
 	return g, nil
 }

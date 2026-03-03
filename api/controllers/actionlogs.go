@@ -9,25 +9,17 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func GetLogs(c *gin.Context) {
-	var gardenId primitive.ObjectID
-
-	gardenIdStr := c.Param("gardenId")
-	if gardenIdStr == "" {
-		gardenId = primitive.NilObjectID
-	} else {
-		gardenId, _ = primitive.ObjectIDFromHex(gardenIdStr)
-	}
+	jardinId := c.Param("gardenId")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	var actionLogs, err = models.GetLogs(ctx, gardenId)
+	actionLogs, err := models.GetLogs(ctx, jardinId)
 	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, err)
+		c.IndentedJSON(http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -35,60 +27,53 @@ func GetLogs(c *gin.Context) {
 }
 
 func PostLog(c *gin.Context) {
-	var postedDTO dto.ActionLogDTO
-	var actionLog models.ActionLog
-	var err error
-	var id primitive.ObjectID
-
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	if err = c.BindJSON(&postedDTO); err != nil {
-		c.IndentedJSON(http.StatusNotAcceptable, err)
+	var postedDTO dto.ActionLogDTO
+	if err := c.BindJSON(&postedDTO); err != nil {
+		c.IndentedJSON(http.StatusNotAcceptable, err.Error())
 		return
 	}
 
-	actionLog, err = postedDTO.ToActionLog()
+	actionLog, err := postedDTO.ToActionLog()
 	if err != nil {
-		c.IndentedJSON(http.StatusNotAcceptable, err)
+		c.IndentedJSON(http.StatusNotAcceptable, err.Error())
 		return
 	}
 
-	id, err = actionLog.Save(ctx)
+	id, err := actionLog.Save(ctx)
 	if err != nil {
-		c.IndentedJSON(http.StatusNotAcceptable, err)
+		c.IndentedJSON(http.StatusNotAcceptable, err.Error())
 		return
 	}
 
-	c.IndentedJSON(http.StatusCreated, map[string]string{"_id": id.Hex()})
+	c.IndentedJSON(http.StatusCreated, map[string]string{"_id": id})
 }
 
 func PostLogs(c *gin.Context) {
-	var postedDTO []dto.ActionLogDTO
-	var logActions []models.ActionLog
-	var err error
-
-	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	if err = c.BindJSON(&postedDTO); err != nil {
-		c.IndentedJSON(http.StatusNotAcceptable, err)
+	var postedDTO []dto.ActionLogDTO
+	if err := c.BindJSON(&postedDTO); err != nil {
+		c.IndentedJSON(http.StatusNotAcceptable, err.Error())
 		return
 	}
 
+	logActions := make([]models.ActionLog, 0, len(postedDTO))
 	for _, v := range postedDTO {
-		var a models.ActionLog
-		a, err = v.ToActionLog()
+		a, err := v.ToActionLog()
 		if err != nil {
-			c.IndentedJSON(http.StatusNotAcceptable, err)
+			c.IndentedJSON(http.StatusNotAcceptable, err.Error())
 			return
 		}
 		logActions = append(logActions, a)
 	}
-	var updatedLogs = 0
-	updatedLogs, err = models.SaveLogs(ctx, logActions)
+
+	updatedLogs, err := models.SaveLogs(ctx, logActions)
 	if err != nil {
-		c.IndentedJSON(http.StatusNotAcceptable, err)
+		c.IndentedJSON(http.StatusNotAcceptable, err.Error())
 		return
 	}
 
@@ -96,39 +81,33 @@ func PostLogs(c *gin.Context) {
 }
 
 func DeleteLog(c *gin.Context) {
-	var err error
-	var id string = c.Param("id")
-
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	objId, err := primitive.ObjectIDFromHex(id)
+	id := c.Param("id")
+
+	a, err := models.GetLog(ctx, id)
 	if err != nil {
-		c.IndentedJSON(http.StatusNotFound, err)
+		c.IndentedJSON(http.StatusNotFound, err.Error())
 		return
 	}
 
-	a := models.GetLog(ctx, objId)
-
-	err = models.DeleteLog(ctx, objId)
-	if err != nil {
-		c.IndentedJSON(http.StatusNotModified, err)
+	if err := models.DeleteLog(ctx, id); err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	DeleteBucketObjects(c, a.Photos)
-	fmt.Println(a.Photos)
 	c.IndentedJSON(http.StatusOK, map[string]string{"_id": id})
 }
 
 func GetTags(c *gin.Context) {
-
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	var tags, err = models.GetTags(ctx)
+	tags, err := models.GetTags(ctx)
 	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, err)
+		c.IndentedJSON(http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -136,13 +115,12 @@ func GetTags(c *gin.Context) {
 }
 
 func GetLieux(c *gin.Context) {
-
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	var lieux, err = models.GetLieux(ctx)
+	lieux, err := models.GetLieux(ctx)
 	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, err)
+		c.IndentedJSON(http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -150,24 +128,18 @@ func GetLieux(c *gin.Context) {
 }
 
 func UpdateLogsSetGarden(c *gin.Context) {
-	var err error
-	var valueStr string = c.Query("value")
-
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	var nbModified int
-
-	value, err := primitive.ObjectIDFromHex(valueStr)
-	if err != nil {
-		c.IndentedJSON(http.StatusNotFound, err)
+	valueStr := c.Query("value")
+	if valueStr == "" {
+		c.IndentedJSON(http.StatusBadRequest, "missing 'value' query parameter")
 		return
 	}
 
-	nbModified, err = models.UpdateLogsSetGarden(ctx, value)
-
+	nbModified, err := models.UpdateLogsSetGarden(ctx, valueStr)
 	if err != nil {
-		c.IndentedJSON(http.StatusNotModified, err)
+		c.IndentedJSON(http.StatusInternalServerError, err.Error())
 		return
 	}
 

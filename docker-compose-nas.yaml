@@ -1,0 +1,55 @@
+
+services:
+      
+  api:
+    image: garden-planner-api:latest
+    ports:
+      - "8081:8081"
+    environment:
+      SQLITE_PATH: /opt/app/api/garden-planner.db
+    volumes:
+      - type: bind
+        source: /share/local/containers-data/garden-planner/api
+        target: /opt/app/api
+
+    restart: unless-stopped
+
+  webapp:
+    platform: linux/amd64
+    image: garden-planner-webapp:latest
+    ports:
+      - "8083:80"
+    #  - "8083:443"
+    #volumes:
+      # https : les certificats doivent être déposés sur l'hôte dans /opt/certs/
+      #- /opt/certs/:/etc/nginx/ssl/:ro
+      #- /etc/letsencrypt/:/etc/nginx/ssl/:ro
+    # networks:
+    #   - lxcbr0
+    depends_on:
+      - api
+    restart: unless-stopped
+  meteo:
+    platform: linux/amd64
+    image: garden-planner-meteo:latest
+    ports:
+      - "8082:8082"
+    environment:
+      MONGO_HOST: mongo
+      MONGO_PORT: 27017
+      MONGO_USER: root
+      MONGO_PWD: zorglub
+      MONGO_DBNAME: garden-planner
+    volumes:
+      - type: bind
+        source: /share/local/containers-data/garden-planner/meteo
+        target: /opt/app/meteo
+    depends_on:
+      - mongo
+    restart: unless-stopped
+
+
+
+# volumes:
+#   garden-planner-mongodb:
+

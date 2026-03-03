@@ -31,6 +31,10 @@ func main() {
 	router.GET("/meteo/accuweather/location/search", controllers.Accuweather_SearchLocations)
 	router.GET("/meteo/accuweather/location/import", controllers.Accuweather_ImportLocations)
 
+	router.GET("/meteofrance/quotidien", controllers.MF_CommandeQuotidienne)
+	router.GET("/meteofrance/resultats", controllers.MF_GetResultats)
+	router.GET("/meteo", controllers.MF_GetMeteo)
+
 	router.Run("0.0.0.0:8082")
 
 }

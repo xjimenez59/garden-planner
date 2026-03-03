@@ -4,76 +4,123 @@ import (
 	"context"
 	"garden-planner/api/config"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	//	"go.mongodb.org/mongo-driver/mongo/options"
+	"github.com/google/uuid"
 )
 
 type GardenRole struct {
-	UserID string `bson:"userId"`
-	Role   string `bson:"role"`
+	UserID string `json:"userId"`
+	Role   string `json:"role"`
 }
 
 type Garden struct {
-	ID             primitive.ObjectID `bson:"_id"`
-	Nom            string             `bson:"nom"`
-	Notes          string             `bson:"notes"`
-	MoisFinRecolte int                `bson:"moisFinRecolte"`
-	MoisFinSemis   int                `bson:"moisFinSemis"`
-	Localisation   string             `bson:"localisation"`
-	Surface        int                `bson:"surface"`
-	Jardiniers     []GardenRole       `bson:"jardiniers"`
+	ID             string       `json:"_id"`
+	Nom            string       `json:"nom"`
+	Notes          string       `json:"notes"`
+	MoisFinRecolte int          `json:"moisFinRecolte"`
+	MoisFinSemis   int          `json:"moisFinSemis"`
+	Localisation   string       `json:"localisation"`
+	Surface        int          `json:"surface"`
+	Jardiniers     []GardenRole `json:"jardiniers"`
 }
 
-func GetGardens(ctx context.Context, userID string) (result []Garden, err error) {
-	result = make([]Garden, 0)
-	var data *mongo.Cursor
-
-	data, err = config.DB.Collection("garden").Find(ctx, bson.D{{"jardiniers.userId", userID}})
+func GetGardens(ctx context.Context, userID string) ([]Garden, error) {
+	rows, err := config.DB.QueryContext(ctx, `
+		SELECT DISTINCT g.id, g.nom, g.notes, g.mois_fin_recolte, g.mois_fin_semis, g.localisation, g.surface
+		FROM garden g
+		INNER JOIN garden_jardinier gj ON g.id = gj.garden_id
+		WHERE gj.user_id = ?`, userID)
 	if err != nil {
 		return nil, err
 	}
-	if err := data.All(ctx, &result); err != nil {
+	defer rows.Close()
+
+	gardens := make([]Garden, 0)
+	for rows.Next() {
+		var g Garden
+		if err := rows.Scan(&g.ID, &g.Nom, &g.Notes, &g.MoisFinRecolte, &g.MoisFinSemis, &g.Localisation, &g.Surface); err != nil {
+			return nil, err
+		}
+		g.Jardiniers, err = getJardiniers(ctx, g.ID)
+		if err != nil {
+			return nil, err
+		}
+		gardens = append(gardens, g)
+	}
+	return gardens, rows.Err()
+}
+
+func getJardiniers(ctx context.Context, gardenID string) ([]GardenRole, error) {
+	rows, err := config.DB.QueryContext(ctx, `SELECT user_id, role FROM garden_jardinier WHERE garden_id = ?`, gardenID)
+	if err != nil {
 		return nil, err
 	}
-	return result, nil
-}
+	defer rows.Close()
 
-func GetGarden(ctx context.Context, id primitive.ObjectID) (result Garden) {
-
-	gardensCollection := config.DB.Collection("garden")
-	filter := bson.D{{"_id", id}}
-	var found *mongo.SingleResult
-	found = gardensCollection.FindOne(ctx, filter)
-	found.Decode(&result)
-	return result
-}
-
-func (g *Garden) Save(ctx context.Context) (id primitive.ObjectID, err error) {
-	gardensCollection := config.DB.Collection("garden")
-	id = primitive.NilObjectID
-	if g.ID.IsZero() {
-		g.ID = primitive.NewObjectID()
-		var result *mongo.InsertOneResult
-		result, err = gardensCollection.InsertOne(ctx, g)
-		if err == nil {
-			id = result.InsertedID.(primitive.ObjectID)
+	roles := make([]GardenRole, 0)
+	for rows.Next() {
+		var r GardenRole
+		if err := rows.Scan(&r.UserID, &r.Role); err != nil {
+			return nil, err
 		}
-	} else {
-		filter := bson.D{{"_id", g.ID}}
-		_, err = gardensCollection.ReplaceOne(ctx, filter, g)
-		if err == nil {
-			id = g.ID
+		roles = append(roles, r)
+	}
+	return roles, rows.Err()
+}
+
+func GetGarden(ctx context.Context, id string) (Garden, error) {
+	var g Garden
+	err := config.DB.QueryRowContext(ctx, `
+		SELECT id, nom, notes, mois_fin_recolte, mois_fin_semis, localisation, surface
+		FROM garden WHERE id = ?`, id).
+		Scan(&g.ID, &g.Nom, &g.Notes, &g.MoisFinRecolte, &g.MoisFinSemis, &g.Localisation, &g.Surface)
+	if err != nil {
+		return g, err
+	}
+	g.Jardiniers, err = getJardiniers(ctx, id)
+	return g, err
+}
+
+func (g *Garden) Save(ctx context.Context) (string, error) {
+	if g.ID == "" {
+		g.ID = uuid.New().String()
+	}
+
+	tx, err := config.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return "", err
+	}
+	defer tx.Rollback()
+
+	_, err = tx.ExecContext(ctx, `
+		INSERT INTO garden (id, nom, notes, mois_fin_recolte, mois_fin_semis, localisation, surface)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+		ON CONFLICT(id) DO UPDATE SET
+			nom = excluded.nom,
+			notes = excluded.notes,
+			mois_fin_recolte = excluded.mois_fin_recolte,
+			mois_fin_semis = excluded.mois_fin_semis,
+			localisation = excluded.localisation,
+			surface = excluded.surface`,
+		g.ID, g.Nom, g.Notes, g.MoisFinRecolte, g.MoisFinSemis, g.Localisation, g.Surface)
+	if err != nil {
+		return "", err
+	}
+
+	if _, err = tx.ExecContext(ctx, `DELETE FROM garden_jardinier WHERE garden_id = ?`, g.ID); err != nil {
+		return "", err
+	}
+
+	for _, j := range g.Jardiniers {
+		if _, err = tx.ExecContext(ctx, `INSERT INTO garden_jardinier (garden_id, user_id, role) VALUES (?, ?, ?)`,
+			g.ID, j.UserID, j.Role); err != nil {
+			return "", err
 		}
 	}
-	return id, err
+
+	return g.ID, tx.Commit()
 }
 
-func DeleteGarden(ctx context.Context, id primitive.ObjectID) (err error) {
-
-	gardensCollection := config.DB.Collection("garden")
-	filter := bson.D{{"_id", id}}
-	_, err = gardensCollection.DeleteOne(ctx, filter)
+func DeleteGarden(ctx context.Context, id string) error {
+	_, err := config.DB.ExecContext(ctx, `DELETE FROM garden WHERE id = ?`, id)
 	return err
 }

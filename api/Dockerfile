@@ -62,5 +62,42 @@ EXPOSE 443
 # Run the executable
 ENTRYPOINT ["garden-planner-api"]
 
+# end windows
+# =======================================================
+# begin nas
+
+# build an image on target arch
+ARG BUILDPLATFORM=linux/amd64
+
+FROM --platform=$BUILDPLATFORM golang:alpine as nas-build-base
+
+FROM nas-build-base as nas-build
+
+WORKDIR /opt/app/api
+COPY . .
+
+# Download all the dependencies and install the package
+RUN go get -d -v ./...
+RUN go install -v ./...
+
+# Build the Go app
+ARG TARGETARCH=amd64
+ARG TARGETOS=linux
+RUN GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o ./bin/garden-planner-api
+
+# Finally, copy the executable file on a fresh "minimal" distro
+FROM --platform=$BUILDPLATFORM alpine:latest as nas-base
+
+FROM nas-base as nas 
+COPY --from=nas-build /opt/app/api/bin/garden-planner-api /usr/local/bin/
+
+
+# Expose port to the outside world
+EXPOSE 8081
+EXPOSE 443
+
+# Run the executable
+ENTRYPOINT ["garden-planner-api"]
+
 
 

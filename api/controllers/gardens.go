@@ -8,22 +8,21 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func GetGardens(c *gin.Context) {
-
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	var userID string = c.Request.Header.Get("Authorization")
+	userID := c.Request.Header.Get("Authorization")
 
-	var gardens, err = models.GetGardens(ctx, userID)
+	gardens, err := models.GetGardens(ctx, userID)
 	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, err)
+		c.IndentedJSON(http.StatusInternalServerError, err.Error())
 		return
 	}
-	var result = make([]dto.GardenDTO, 0)
+
+	result := make([]dto.GardenDTO, 0)
 	for _, v := range gardens {
 		var gdto dto.GardenDTO
 		gdto.FromGardenModel(v)
@@ -33,54 +32,43 @@ func GetGardens(c *gin.Context) {
 }
 
 func PostGarden(c *gin.Context) {
-	var postedDTO dto.GardenDTO
-	var garden models.Garden
-	var err error
-	var id primitive.ObjectID
-
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	if err = c.BindJSON(&postedDTO); err != nil {
-		c.IndentedJSON(http.StatusNotAcceptable, err)
+	var postedDTO dto.GardenDTO
+	if err := c.BindJSON(&postedDTO); err != nil {
+		c.IndentedJSON(http.StatusNotAcceptable, err.Error())
 		return
 	}
 
-	garden, err = postedDTO.ToGardenModel()
+	garden, err := postedDTO.ToGardenModel()
 	if err != nil {
-		c.IndentedJSON(http.StatusNotAcceptable, err)
+		c.IndentedJSON(http.StatusNotAcceptable, err.Error())
 		return
 	}
 
-	id, err = garden.Save(ctx)
+	id, err := garden.Save(ctx)
 	if err != nil {
-		c.IndentedJSON(http.StatusNotAcceptable, err)
+		c.IndentedJSON(http.StatusNotAcceptable, err.Error())
 		return
 	}
 
-	c.IndentedJSON(http.StatusCreated, map[string]string{"_id": id.Hex()})
+	c.IndentedJSON(http.StatusCreated, map[string]string{"_id": id})
 }
 
 func DeleteGarden(c *gin.Context) {
-	var err error
-	var id string = c.Param("id")
-
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	objId, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		c.IndentedJSON(http.StatusNotFound, err)
+	id := c.Param("id")
+
+	if _, err := models.GetGarden(ctx, id); err != nil {
+		c.IndentedJSON(http.StatusNotFound, err.Error())
 		return
 	}
 
-	models.GetGarden(ctx, objId)
-
-	//--- supprimer d'abord tous les logs associés
-
-	err = models.DeleteGarden(ctx, objId)
-	if err != nil {
-		c.IndentedJSON(http.StatusNotModified, err)
+	if err := models.DeleteGarden(ctx, id); err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, err.Error())
 		return
 	}
 

@@ -3,186 +3,114 @@ package models
 import (
 	"context"
 	"garden-planner/api/config"
-
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type RecolteAnnee struct {
-	Annee int `bson: "annee"`
-	Poids int `bson: "poids"`
-	Qte   int `bson: "qte"`
+	Annee int
+	Poids int
+	Qte   int
 }
 
 type Recolte struct {
 	Legume string
 	Lieu   string
-	Annees []RecolteAnnee `bson: "annees"`
+	Annees []RecolteAnnee
 }
 
-// --- Calcule l'année réelle et le mois de récolte, puis l'année d'affectation de la récolte
-func AppendYearStages(src mongo.Pipeline, moisMaxRecolte int) (result mongo.Pipeline) {
-
-	result = append(src, bson.D{{"$addFields", bson.M{
-		"annee": bson.D{{"$toInt", bson.D{{"$substrBytes", bson.A{"$dateAction", 0, 4}}}}},
-		"mois":  bson.D{{"$toInt", bson.D{{"$substrBytes", bson.A{"$dateAction", 5, 2}}}}},
-	}}})
-
-	result = append(result, bson.D{{"$set", bson.M{"anneeRecolte": bson.D{{"$add", []interface{}{
-		"$annee",
-		bson.D{{"$cond", []interface{}{
-			bson.D{{"$lte", []interface{}{"$mois", moisMaxRecolte}}},
-			-1,
-			0},
-		}},
-	},
-	}}}}})
-
-	return result
-}
-
-func GetRecoltes(ctx context.Context) (result []Recolte, err error) {
-	const moisMaxRecolte = 3
-	result = make([]Recolte, 0)
-
-	pipe := mongo.Pipeline{}
-	pipe = append(pipe, bson.D{{"$match", bson.M{"action": "Récolte"}}}) //-- filtre les récoltes
-	pipe = AppendYearStages(pipe, moisMaxRecolte)                        //-- calcule l'année de récolte
-
-	pipe = append(pipe, bson.D{ //-- cumul par légume et par année
-		{
-			"$group", bson.D{
-				{
-					"_id", bson.D{
-						{"legume", "$legume"},
-						{"annee", "$anneeRecolte"},
-					},
-				},
-				{"legume", bson.D{{"$first", "$legume"}}},
-				{"annee", bson.D{{"$first", "$anneeRecolte"}}},
-				{"poids", bson.D{{"$sum", "$poids"}}},
-				{"qte", bson.D{{"$sum", "$qte"}}},
-			},
-		},
-	})
-
-	pipe = append(pipe, bson.D{ // regroupe par légume avec une liste d'années
-		{
-			"$group", bson.D{
-				{
-					"_id", bson.D{
-						{"legume", "$legume"},
-					},
-				},
-				{"legume", bson.D{{"$first", "$legume"}}},
-				{"annees", bson.D{{"$addToSet", bson.D{{"annee", "$annee"}, {"poids", "$poids"}, {"qte", "$qte"}}}}},
-			},
-		},
-	})
-
-	pipe = append(pipe, bson.D{ // ordonne par nom de légume
-		{
-			"$sort", bson.D{
-				{"legume", 1},
-			},
-		},
-	})
-
-	cursor, err := config.DB.Collection("actionLog").Aggregate(ctx, pipe)
+// GetRecoltes retourne les cumuls de récolte par légume et par année.
+// Les récoltes de janvier-mars sont rattachées à l'année précédente.
+func GetRecoltes(ctx context.Context) ([]Recolte, error) {
+	rows, err := config.DB.QueryContext(ctx, `
+		SELECT
+			legume,
+			CASE
+				WHEN CAST(strftime('%m', date_action) AS INTEGER) <= 3
+				THEN CAST(strftime('%Y', date_action) AS INTEGER) - 1
+				ELSE CAST(strftime('%Y', date_action) AS INTEGER)
+			END AS annee_recolte,
+			SUM(poids) AS poids,
+			SUM(qte) AS qte
+		FROM action_log
+		WHERE action = 'Récolte' AND legume != ''
+		GROUP BY legume, annee_recolte
+		ORDER BY legume, annee_recolte`)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
-	var data []struct {
-		Legume string         `bson: "legume"`
-		Annees []RecolteAnnee `bson: "annees"`
+	recolteMap := make(map[string]*Recolte)
+	order := make([]string, 0)
+
+	for rows.Next() {
+		var legume string
+		var annee, poids, qte int
+		if err := rows.Scan(&legume, &annee, &poids, &qte); err != nil {
+			return nil, err
+		}
+		if _, ok := recolteMap[legume]; !ok {
+			recolteMap[legume] = &Recolte{Legume: legume, Annees: []RecolteAnnee{}}
+			order = append(order, legume)
+		}
+		recolteMap[legume].Annees = append(recolteMap[legume].Annees, RecolteAnnee{Annee: annee, Poids: poids, Qte: qte})
 	}
-
-	if cursor.All(ctx, &data) != nil {
+	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-	for _, v := range data {
-		result = append(result, Recolte{
-			Legume: v.Legume,
-			Lieu:   "",
-			Annees: v.Annees,
-		})
+
+	result := make([]Recolte, 0, len(order))
+	for _, k := range order {
+		result = append(result, *recolteMap[k])
 	}
 	return result, nil
 }
 
-func GetRecoltesLieux(ctx context.Context) (result []Recolte, err error) {
-	const moisMaxRecolte = 3
-	result = make([]Recolte, 0)
-
-	pipe := mongo.Pipeline{}
-	pipe = append(pipe, bson.D{{"$match", bson.M{"action": "Récolte"}}}) //-- filtre les récoltes
-	pipe = AppendYearStages(pipe, moisMaxRecolte)                        //-- calcule l'année de récolte
-
-	pipe = append(pipe, bson.D{ //-- cumul par lieu, légume et par année
-		{
-			"$group", bson.D{
-				{
-					"_id", bson.D{
-						{"lieu", "$lieu"},
-						{"legume", "$legume"},
-						{"annee", "$anneeRecolte"},
-					},
-				},
-				{"lieu", bson.D{{"$first", "$lieu"}}},
-				{"legume", bson.D{{"$first", "$legume"}}},
-				{"annee", bson.D{{"$first", "$anneeRecolte"}}},
-				{"poids", bson.D{{"$sum", "$poids"}}},
-				{"qte", bson.D{{"$sum", "$qte"}}},
-			},
-		},
-	})
-
-	pipe = append(pipe, bson.D{ // regroupe par lieu et légume avec une liste d'années
-		{
-			"$group", bson.D{
-				{
-					"_id", bson.D{
-						{"lieu", "$lieu"},
-						{"legume", "$legume"},
-					},
-				},
-				{"lieu", bson.D{{"$first", "$lieu"}}},
-				{"legume", bson.D{{"$first", "$legume"}}},
-				{"annees", bson.D{{"$addToSet", bson.D{{"annee", "$annee"}, {"poids", "$poids"}, {"qte", "$qte"}}}}},
-			},
-		},
-	})
-
-	pipe = append(pipe, bson.D{ // ordonne par nom de légume
-		{
-			"$sort", bson.D{
-				{"lieu", 1},
-				{"legume", 1},
-			},
-		},
-	})
-
-	cursor, err := config.DB.Collection("actionLog").Aggregate(ctx, pipe)
+// GetRecoltesLieux retourne les cumuls de récolte par lieu, légume et par année.
+func GetRecoltesLieux(ctx context.Context) ([]Recolte, error) {
+	rows, err := config.DB.QueryContext(ctx, `
+		SELECT
+			lieu,
+			legume,
+			CASE
+				WHEN CAST(strftime('%m', date_action) AS INTEGER) <= 3
+				THEN CAST(strftime('%Y', date_action) AS INTEGER) - 1
+				ELSE CAST(strftime('%Y', date_action) AS INTEGER)
+			END AS annee_recolte,
+			SUM(poids) AS poids,
+			SUM(qte) AS qte
+		FROM action_log
+		WHERE action = 'Récolte' AND legume != ''
+		GROUP BY lieu, legume, annee_recolte
+		ORDER BY lieu, legume, annee_recolte`)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
-	var data []struct {
-		Lieu   string         `bson: "lieu"`
-		Legume string         `bson: "legume"`
-		Annees []RecolteAnnee `bson: "annees"`
+	type key struct{ lieu, legume string }
+	recolteMap := make(map[key]*Recolte)
+	order := make([]key, 0)
+
+	for rows.Next() {
+		var lieu, legume string
+		var annee, poids, qte int
+		if err := rows.Scan(&lieu, &legume, &annee, &poids, &qte); err != nil {
+			return nil, err
+		}
+		k := key{lieu, legume}
+		if _, ok := recolteMap[k]; !ok {
+			recolteMap[k] = &Recolte{Legume: legume, Lieu: lieu, Annees: []RecolteAnnee{}}
+			order = append(order, k)
+		}
+		recolteMap[k].Annees = append(recolteMap[k].Annees, RecolteAnnee{Annee: annee, Poids: poids, Qte: qte})
 	}
-
-	if cursor.All(ctx, &data) != nil {
+	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-	for _, v := range data {
-		result = append(result, Recolte{
-			Legume: v.Legume,
-			Lieu:   v.Lieu,
-			Annees: v.Annees,
-		})
+
+	result := make([]Recolte, 0, len(order))
+	for _, k := range order {
+		result = append(result, *recolteMap[k])
 	}
 	return result, nil
 }

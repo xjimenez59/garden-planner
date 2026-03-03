@@ -1,0 +1,960 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "DonneesPubliquesClimatologie",
+    "contact": {
+      "name": "Support API Données Publiques",
+      "url": "https://donneespubliques.meteofrance.fr/?fond=produit&id_produit=305&id_rubrique=50",
+      "email": "vd@meteo.fr"
+    },
+    "version": "v1"
+  },
+  "servers": [
+    {
+      "url": "https://public-api.meteofrance.fr/public/DPClim/v1"
+    }
+  ],
+  "security": [
+    {
+      "default": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Stations",
+      "description": "Listes de stations disponibles et informations par station.\n"
+    },
+    {
+      "name": "Commandes",
+      "description": "Commande des données climatologiques sur tout l'historique, par un mécanisme asynchrone.\n"
+    },
+    {
+      "name": "Téléchargement",
+      "description": "Téléchargement de la commande des données climatologiques (service asynchrone)"
+    }
+  ],
+  "paths": {
+    "/liste-stations/infrahoraire-6m": {
+      "get": {
+        "tags": [
+          "Stations"
+        ],
+        "summary": "récupérer la liste des stations climatologiques d'un département envoyant les mesures à la fréquence 6 minutes",
+        "description": "renvoie la liste des stations du département au format JSON",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id-departement"
+          },
+          {
+            "$ref": "#/components/parameters/parametre"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/200"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "description": "paramètre id-departement inexistant"
+          },
+          "429": {
+            "$ref": "#/components/responses/429"
+          },
+          "500": {
+            "description": "problème du serveur d'application dans la construction de la réponse"
+          },
+          "502": {
+            "$ref": "#/components/responses/502"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          },
+          "504": {
+            "$ref": "#/components/responses/504"
+          }
+        },
+        "security": [
+          {
+            "default": []
+          }
+        ],
+        "x-auth-type": "Application & Application User",
+        "x-throttling-tier": "Unlimited"
+      }
+    },
+    "/liste-stations/horaire": {
+      "get": {
+        "tags": [
+          "Stations"
+        ],
+        "summary": "récupérer la liste des stations climatologiques d'un département envoyant les mesures à la fréquence 1 heure",
+        "description": "renvoie la liste des stations du département au format JSON",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id-departement"
+          },
+          {
+            "$ref": "#/components/parameters/parametre"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "la liste est renvoyée"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "description": "accès interdit"
+          },
+          "404": {
+            "description": "paramètre id-departement inexistant"
+          },
+          "429": {
+            "$ref": "#/components/responses/429"
+          },
+          "500": {
+            "description": "problème du serveur d'application dans la construction de la réponse"
+          },
+          "502": {
+            "$ref": "#/components/responses/502"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          },
+          "504": {
+            "$ref": "#/components/responses/504"
+          }
+        },
+        "security": [
+          {
+            "default": []
+          }
+        ],
+        "x-auth-type": "Application & Application User",
+        "x-throttling-tier": "Unlimited"
+      }
+    },
+    "/liste-stations/quotidienne": {
+      "get": {
+        "tags": [
+          "Stations"
+        ],
+        "summary": "récupérer la liste des stations climatologiques d'un département envoyant les mesures à la fréquence 1 journée, 10 jours ou 1 mois",
+        "description": "renvoie la liste des stations du département au format JSON",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id-departement"
+          },
+          {
+            "$ref": "#/components/parameters/parametre"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "la liste est renvoyée"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "description": "accès interdit"
+          },
+          "404": {
+            "description": "paramètre id-departement inexistant"
+          },
+          "429": {
+            "$ref": "#/components/responses/429"
+          },
+          "500": {
+            "description": "problème du serveur d'application dans la construction de la réponse"
+          },
+          "502": {
+            "$ref": "#/components/responses/502"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          },
+          "504": {
+            "$ref": "#/components/responses/504"
+          }
+        },
+        "security": [
+          {
+            "default": []
+          }
+        ],
+        "x-auth-type": "Application & Application User",
+        "x-throttling-tier": "Unlimited"
+      }
+    },
+    "/information-station": {
+      "get": {
+        "tags": [
+          "Stations"
+        ],
+        "summary": "récupérer les informations d'historique de la station",
+        "description": "renvoie l'historique de la station",
+        "parameters": [
+          {
+            "name": "id-station",
+            "in": "query",
+            "description": " identifiant de la station. Nomenclature : 8 chiffres selon DDCCCNNN (métropole) ou DDDCCNNN (outre-mer) avec insee de la commune (DD département, CCC n° de la commune dans le département de métropole ou DDD département, CC n° de la commune dans le département d'outre-mer) et NNN n° de la station dans la commune",
+            "required": true,
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "requête acceptée"
+          },
+          "400": {
+            "description": "paramètre id-station incorrect sémantiquement"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "description": "la station demandée n'existe pas"
+          },
+          "429": {
+            "$ref": "#/components/responses/429"
+          },
+          "500": {
+            "description": "problème du serveur d'application dans la construction de la réponse"
+          },
+          "502": {
+            "$ref": "#/components/responses/502"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          },
+          "504": {
+            "$ref": "#/components/responses/504"
+          }
+        },
+        "security": [
+          {
+            "default": []
+          }
+        ],
+        "x-auth-type": "Application & Application User",
+        "x-throttling-tier": "Unlimited"
+      }
+    },
+    "/commande-station/infrahoraire-6m": {
+      "get": {
+        "tags": [
+          "Commandes"
+        ],
+        "summary": "commande la création du fichier TEXTE (CSV) des données climatologiques de précipitation, à la fréquence 6 minutes, pour une station, sur la profondeur de date demandée",
+        "description": "renvoie le n° de commande dans le corps (structuré – JSON) de la réponse",
+        "parameters": [
+          {
+            "name": "id-station",
+            "in": "query",
+            "description": "identifiant de la station. Nomenclature : 8 chiffres selon DDCCCNNN (métropole) ou DDDCCNNN (outre-mer) avec insee de la commune (DD département, CCC n° de la commune dans le département de métropole ou DDD département, CC n° de la commune dans le département d'outre-mer) et NNN n° de la station dans la commune",
+            "required": true,
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date-deb-periode",
+            "in": "query",
+            "description": "date de début de période pour la commande (au format ISO 8601 avec TZ UTC : AAAA-MM-JJThh:mm:00Z. Attention les minutes doivent être un multiple de 6 (00, 06, 12, 18, 24, 30, 36, 42, 48, 54) et les secondes doivent être à 00.)",
+            "required": true,
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "date-fin-periode",
+            "in": "query",
+            "description": "date de fin de période pour la commande (au format ISO 8601 avec TZ UTC : AAAA-MM-JJThh:mm:00Z. Attention les minutes doivent être un multiple de 6 (00, 06, 12, 18, 24, 30, 36, 42, 48, 54) et les secondes doivent être à 00.)",
+            "required": true,
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "requête acceptée"
+          },
+          "400": {
+            "description": "contrôle de paramètres en erreur"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "description": "accès interdit"
+          },
+          "404": {
+            "description": "la station demandée n'existe pas"
+          },
+          "429": {
+            "$ref": "#/components/responses/429"
+          },
+          "500": {
+            "description": "erreur interne au serveur"
+          },
+          "502": {
+            "$ref": "#/components/responses/502"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          },
+          "504": {
+            "$ref": "#/components/responses/504"
+          }
+        },
+        "security": [
+          {
+            "default": []
+          }
+        ],
+        "x-auth-type": "Application & Application User",
+        "x-throttling-tier": "Unlimited"
+      }
+    },
+    "/commande-station/horaire": {
+      "get": {
+        "tags": [
+          "Commandes"
+        ],
+        "summary": "commande la création du fichier TEXTE (CSV) des données climatologiques pour tous les paramètres disponibles, à la fréquence horaire, pour une station, sur la profondeur de date demandée",
+        "description": "renvoie le n° de commande dans le corps (structuré – JSON) de la réponse",
+        "parameters": [
+          {
+            "name": "id-station",
+            "in": "query",
+            "description": "identifiant de la station. Nomenclature : 8 chiffres selon DDCCCNNN (métropole) ou DDDCCNNN (outre-mer) avec insee de la commune (DD département, CCC n° de la commune dans le département de métropole ou DDD département, CC n° de la commune dans le département d'outre-mer) et NNN n° de la station dans la commune.",
+            "required": true,
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date-deb-periode",
+            "in": "query",
+            "description": "date de début de période pour la commande (au format ISO 8601 avec TZ UTC : AAAA-MM-JJThh:00:00Z)",
+            "required": true,
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "date-fin-periode",
+            "in": "query",
+            "description": "date de fin de période pour la commande (au format ISO 8601 avec TZ UTC : AAAA-MM-JJThh:59:59Z)",
+            "required": true,
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "requête acceptée"
+          },
+          "400": {
+            "description": "contrôle de paramètres en erreur"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "description": "accès interdit"
+          },
+          "404": {
+            "description": "la station demandée n'existe pas"
+          },
+          "429": {
+            "$ref": "#/components/responses/429"
+          },
+          "500": {
+            "description": "erreur interne au serveur"
+          },
+          "502": {
+            "$ref": "#/components/responses/502"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          },
+          "504": {
+            "$ref": "#/components/responses/504"
+          }
+        },
+        "security": [
+          {
+            "default": []
+          }
+        ],
+        "x-auth-type": "Application & Application User",
+        "x-throttling-tier": "Unlimited"
+      }
+    },
+    "/commande-station/quotidienne": {
+      "get": {
+        "tags": [
+          "Commandes"
+        ],
+        "summary": "commande la création du fichier TEXTE (CSV) des données climatologiques pour tous les paramètres disponibles, à la fréquence quotidienne, pour une station, sur la profondeur de date demandée",
+        "description": "renvoie le n° de commande dans le corps (structuré – JSON) de la réponse",
+        "parameters": [
+          {
+            "name": "id-station",
+            "in": "query",
+            "description": "identifiant de la station. Nomenclature : 8 chiffres selon DDCCCNNN (métropole) ou DDDCCNNN (outre-mer) avec insee de la commune (DD département, CCC n° de la commune dans le département de métropole ou DDD département, CC n° de la commune dans le département d'outre-mer) et NNN n° de la station dans la commune.",
+            "required": true,
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date-deb-periode",
+            "in": "query",
+            "description": "date de début de période pour la commande (au format ISO 8601 avec TZ UTC : AAAA-MM-JJT00:00:00Z)",
+            "required": true,
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "date-fin-periode",
+            "in": "query",
+            "description": "date de fin de période pour la commande (au format ISO 8601 avec TZ UTC : AAAA-MM-JJT23:59:59Z)",
+            "required": true,
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "requête acceptée"
+          },
+          "400": {
+            "description": "contrôle de paramètres en erreur"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "description": "accès interdit"
+          },
+          "404": {
+            "description": "la station demandée n'existe pas"
+          },
+          "429": {
+            "$ref": "#/components/responses/429"
+          },
+          "500": {
+            "description": "erreur interne au serveur"
+          },
+          "502": {
+            "$ref": "#/components/responses/502"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          },
+          "504": {
+            "$ref": "#/components/responses/504"
+          }
+        },
+        "security": [
+          {
+            "default": []
+          }
+        ],
+        "x-auth-type": "Application & Application User",
+        "x-throttling-tier": "Unlimited"
+      }
+    },
+    "/commande-station/decadaire": {
+      "get": {
+        "tags": [
+          "Commandes"
+        ],
+        "summary": "commande la création du fichier TEXTE (CSV) des données climatologiques pour tous les paramètres disponibles, à la fréquence décadaire, pour une station, sur la profondeur de date demandée",
+        "description": "renvoie le n° de commande dans le corps (structuré – JSON) de la réponse",
+        "parameters": [
+          {
+            "name": "id-station",
+            "in": "query",
+            "description": " identifiant de la station. Nomenclature : 8 chiffres selon DDCCCNNN (métropole) ou DDDCCNNN (outre-mer) avec insee de la commune (DD département, CCC n° de la commune dans le département de métropole ou DDD département, CC n° de la commune dans le département d'outre-mer) et NNN n° de la station dans la commune.",
+            "required": true,
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date-deb-periode",
+            "in": "query",
+            "description": "date de début de période pour la commande (au format ISO 8601 avec TZ UTC : AAAA-MM-JJT00:00:00Z)",
+            "required": true,
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "date-fin-periode",
+            "in": "query",
+            "description": "date de fin de période pour la commande (au format ISO 8601 avec TZ UTC : AAAA-MM-JJT00:00:00Z)",
+            "required": true,
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "requête acceptée"
+          },
+          "400": {
+            "description": "contrôle de paramètres en erreur"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "description": "accès interdit"
+          },
+          "404": {
+            "description": "la station demandée n'existe pas"
+          },
+          "429": {
+            "$ref": "#/components/responses/429"
+          },
+          "500": {
+            "description": "erreur interne au serveur"
+          },
+          "502": {
+            "$ref": "#/components/responses/502"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          },
+          "504": {
+            "$ref": "#/components/responses/504"
+          }
+        },
+        "security": [
+          {
+            "default": []
+          }
+        ],
+        "x-auth-type": "Application & Application User",
+        "x-throttling-tier": "Unlimited"
+      }
+    },
+    "/commande-station/mensuelle": {
+      "get": {
+        "tags": [
+          "Commandes"
+        ],
+        "summary": "commande la création du fichier TEXTE (CSV) des données climatologiques pour tous les paramètres disponibles, à la fréquence mensuelle, pour une station, sur la profondeur de date demandée",
+        "description": "renvoie le n° de commande dans le corps (structuré – JSON) de la réponse",
+        "parameters": [
+          {
+            "name": "id-station",
+            "in": "query",
+            "description": " identifiant de la station. Nomenclature : 8 chiffres selon DDCCCNNN (métropole) ou DDDCCNNN (outre-mer) avec insee de la commune (DD département, CCC n° de la commune dans le département de métropole ou DDD département, CC n° de la commune dans le département d'outre-mer) et NNN n° de la station dans la commune.",
+            "required": true,
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date-deb-periode",
+            "in": "query",
+            "description": "date de début de période pour la commande (au format ISO 8601 avec TZ UTC : AAAA-MM-JJT00:00:00Z)",
+            "required": true,
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "date-fin-periode",
+            "in": "query",
+            "description": "date de fin de période pour la commande (au format ISO 8601 avec TZ UTC : AAAA-MM-JJT00:00:00Z)",
+            "required": true,
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "requête acceptée"
+          },
+          "400": {
+            "description": "contrôle de paramètres en erreur"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "description": "accès interdit"
+          },
+          "404": {
+            "description": "la station demandée n'existe pas"
+          },
+          "429": {
+            "$ref": "#/components/responses/429"
+          },
+          "500": {
+            "description": "erreur interne au serveur"
+          },
+          "502": {
+            "$ref": "#/components/responses/502"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          },
+          "504": {
+            "$ref": "#/components/responses/504"
+          }
+        },
+        "security": [
+          {
+            "default": []
+          }
+        ],
+        "x-auth-type": "Application & Application User",
+        "x-throttling-tier": "Unlimited"
+      }
+    },
+    "/commande/fichier": {
+      "get": {
+        "tags": [
+          "Téléchargement"
+        ],
+        "summary": "récupère le fichier des données de la commande (si celui-ci est prêt) avec le n° fourni en retour de la requête de données",
+        "description": "renvoie un fichier TEXTE CSV contenant les données issues de la commande, dans le flux de réponse",
+        "parameters": [
+          {
+            "name": "id-cmde",
+            "in": "query",
+            "description": "identifiant de la commande de données, tel que renvoyé par une requête à l'une des ressources \"ProduitClim\"",
+            "required": true,
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "fichier renvoyé"
+          },
+          "204": {
+            "description": "production encore en attente ou en cours"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "description": "accès interdit"
+          },
+          "404": {
+            "description": "le numéro de commande n'existe pas"
+          },
+          "410": {
+            "description": "production déjà livrée"
+          },
+          "429": {
+            "$ref": "#/components/responses/429"
+          },
+          "500": {
+            "description": "production terminée, échec"
+          },
+          "507": {
+            "description": "production rejetée par le système (trop volumineuse)"
+          }
+        },
+        "security": [
+          {
+            "default": []
+          }
+        ],
+        "x-auth-type": "Application & Application User",
+        "x-throttling-tier": "Unlimited"
+      }
+    }
+  },
+  "components": {
+    "responses": {
+      "200": {
+        "description": "OK"
+      },
+      "202": {
+        "description": "requête acceptée"
+      },
+      "401": {
+        "description": "non autorisé - informations d'identification non valides"
+      },
+      "403": {
+        "description": "accès interdit"
+      },
+      "404": {
+        "description": "paramètre id-departement inexistant"
+      },
+      "429": {
+        "description": "seuil de requête atteint"
+      },
+      "500": {
+        "description": "problème du serveur d'application dans la construction de la réponse"
+      },
+      "502": {
+        "description": "erreur de passerelle"
+      },
+      "503": {
+        "description": "service indisponible"
+      },
+      "504": {
+        "description": "temps trop long"
+      }
+    },
+    "parameters": {
+      "parametre": {
+        "name": "parametre",
+        "in": "query",
+        "description": "Type de paramètres disponible (Précipitations, Température, ...)",
+        "required": false,
+        "style": "form",
+        "explode": true,
+        "schema": {
+          "type": "string",
+          "nullable": true
+        },
+        "examples": {
+          "--": {
+            "value": null
+          },
+          "precipitation": {
+            "summary": "Précipitations",
+            "value": "precipitation"
+          },
+          "temperature": {
+            "summary": "Température",
+            "value": "temperature"
+          },
+          "humidité": {
+            "summary": "Humidité",
+            "value": "humidite"
+          },
+          "vent": {
+            "summary": "Vent",
+            "value": "vent"
+          },
+          "pression": {
+            "summary": "Pression",
+            "value": "pression"
+          },
+          "rayonnement": {
+            "summary": "Rayonnement",
+            "value": "rayonnement"
+          },
+          "insolation": {
+            "summary": "Insolation",
+            "value": "insolation"
+          },
+          "etat_mer": {
+            "summary": "Etat de la mer",
+            "value": "etat_mer"
+          },
+          "evapo": {
+            "summary": "ETP quotidienne",
+            "value": "evapo"
+          }
+        }
+      },
+      "id-departement": {
+        "name": "id-departement",
+        "in": "query",
+        "description": "identifiant du département",
+        "required": true,
+        "style": "form",
+        "explode": true,
+        "schema": {
+          "type": "integer",
+          "enum": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63,
+            64,
+            65,
+            66,
+            67,
+            68,
+            69,
+            70,
+            71,
+            72,
+            73,
+            74,
+            75,
+            76,
+            77,
+            78,
+            79,
+            80,
+            81,
+            82,
+            83,
+            84,
+            85,
+            86,
+            87,
+            88,
+            89,
+            90,
+            91,
+            92,
+            93,
+            94,
+            95,
+            971,
+            972,
+            973,
+            974,
+            975,
+            984,
+            985,
+            986,
+            987,
+            988,
+            99
+          ]
+        }
+      }
+    },
+    "securitySchemes": {
+      "default": {
+        "type": "oauth2",
+        "flows": {
+          "implicit": {
+            "authorizationUrl": "https://public-api.meteofrance.fr/authorize",
+            "scopes": {}
+          }
+        }
+      }
+    }
+  }
+}
