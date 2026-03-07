@@ -26,7 +26,7 @@ WORKDIR /app/
 RUN flutter build web
 
 # Stage 2 - Create the run-time image
-FROM nginx:1.21.1-alpine as windows
+FROM nginx:1.21.1-alpine AS windows
 COPY --from=build-env /app/build/web /usr/share/nginx/html
 
 # Expose port to the outside world
@@ -59,7 +59,7 @@ RUN flutter doctor -v
 RUN flutter channel master
 RUN flutter upgrade --force
 
-FROM build-rpi-base as build-rpi
+FROM build-rpi-base AS build-rpi
 
 # Copy files to container and build
 RUN mkdir /app/
@@ -69,8 +69,54 @@ WORKDIR /app/
 RUN flutter build web
 
 # Stage 2 - Create the run-time image
-FROM  --platform=$BUILDPLATFORM arm64v8/nginx:1.21.1-alpine as raspberry
+FROM  --platform=$BUILDPLATFORM arm64v8/nginx:1.21.1-alpine AS raspberry
 COPY --from=build-rpi /app/build/web /usr/share/nginx/html
+
+# acces https. les certificats doivent etre deposes sur le serveur hôte dans un volume accessible
+COPY ./nginx.conf /etc/nginx/conf.d/garden-planner.conf
+
+# Expose port to the outside world
+EXPOSE 80
+
+# end raspberry
+# ---------------------------------------------
+# pour nas
+
+# build an image on target arch
+ARG BUILDPLATFORM=linux/amd64
+
+#Stage 1 - Install dependencies and build the app in a build environment
+FROM  --platform=$BUILDPLATFORM debian:latest AS build-nas-base
+
+# Install flutter dependencies
+RUN apt-get update
+RUN apt-get install -y curl git wget unzip gdb lib32stdc++6-x32-cross libglu1-mesa fonts-droid-fallback python3 sed
+RUN apt-get clean
+
+# Clone the flutter repo
+RUN git config --global pack.window 1
+RUN git clone https://github.com/flutter/flutter.git /usr/local/flutter
+
+# Set flutter path
+ENV PATH="${PATH}:/usr/local/flutter/bin:/usr/local/flutter/bin/cache/dart-sdk/bin"
+
+# Run flutter doctor
+RUN flutter doctor -v
+RUN flutter channel master
+RUN flutter upgrade --force
+
+FROM build-nas-base AS build-nas
+
+# Copy files to container and build
+RUN mkdir /app/
+COPY . /app/
+WORKDIR /app/
+
+RUN flutter build web
+
+# Stage 2 - Create the run-time image
+FROM  --platform=$BUILDPLATFORM nginx:stable-alpine3.23 AS nas
+COPY --from=build-nas /app/build/web /usr/share/nginx/html
 
 # acces https. les certificats doivent etre deposes sur le serveur hôte dans un volume accessible
 COPY ./nginx.conf /etc/nginx/conf.d/garden-planner.conf

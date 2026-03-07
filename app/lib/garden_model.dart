@@ -10,6 +10,7 @@ class Garden {
   int MoisFinSemis = 10;
   String Localisation;
   int Surface;
+  String MeteofSite = "";
 
   Garden(
       {this.ID = "",
@@ -18,7 +19,8 @@ class Garden {
       this.MoisFinRecolte = 3,
       this.MoisFinSemis = 10,
       this.Localisation = "",
-      this.Surface = 0});
+      this.Surface = 0,
+      this.MeteofSite = ""});
 
   factory Garden.fromJson(Map<String, dynamic> json) => Garden(
       ID: json["_id"],
@@ -27,7 +29,8 @@ class Garden {
       MoisFinRecolte: json["moisFinRecolte"],
       MoisFinSemis: json["moisFinSemis"],
       Localisation: json["localisation"],
-      Surface: json["surface"]);
+      Surface: json["surface"],
+      MeteofSite: json["meteofSite"] ?? "");
 
   Map<String, dynamic> toJson() => {
         "_id": ID,
@@ -37,9 +40,10 @@ class Garden {
         "moisFinSemis": MoisFinSemis,
         "localisation": Localisation,
         "surface": Surface,
+        "meteofSite": MeteofSite,
       };
 
-  copyFrom(Garden src) {
+  void copyFrom(Garden src) {
     ID = src.ID;
     Nom = src.Nom;
     Notes = src.Notes;
@@ -47,6 +51,7 @@ class Garden {
     MoisFinSemis = src.MoisFinSemis;
     Localisation = src.Localisation;
     Surface = src.Surface;
+    MeteofSite = src.MeteofSite;
   }
 }
 

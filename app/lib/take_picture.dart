@@ -242,7 +242,7 @@ class TakePictureScreenState extends State<TakePictureScreen> {
       Navigator.pop(context, imageUrl);
     } catch (e) {
       // If an error occurs, log the error to the console.
-      print(e);
+      //print(e);
     }
   }
 

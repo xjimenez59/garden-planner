@@ -224,7 +224,7 @@ class _ActionDetail extends State<ActionDetail> {
             key: Key(img),
             onDismissed: onPhotoDismissed(img),
             background: Container(
-                color: Colors.red.shade100, margin: EdgeInsets.only(bottom: 0)),
+                color: Colors.white, margin: EdgeInsets.only(bottom: 0)),
             child: Padding(
               padding: EdgeInsets.all(12),
               child: Image.network(img),
@@ -456,13 +456,13 @@ class _ActionDetail extends State<ActionDetail> {
     return result;
   }
 
-  Future<int> _postLogs(List<ActionLog> logs) async {
-    int? result;
-    result = (await ApiService().postLogs(logs));
-    result ??= 0;
+  // Future<int> _postLogs(List<ActionLog> logs) async {
+  //   int? result;
+  //   result = (await ApiService().postLogs(logs));
+  //   result ??= 0;
 
-    return result;
-  }
+  //   return result;
+  // }
 
   Future<String> _postLog(ActionLog a) async {
     String? result;

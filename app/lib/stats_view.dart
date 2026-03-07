@@ -1,7 +1,5 @@
-import 'package:app/api_service.dart';
 import 'package:app/recolte_model.dart';
 import 'package:app/stats_recolte_annuelle.dart';
-import 'package:app/utils.dart';
 import 'package:flutter/material.dart';
 
 class ActionLogStats extends StatefulWidget {
@@ -13,6 +11,7 @@ class ActionLogStats extends StatefulWidget {
 
 class _ActionLogStatsState extends State<ActionLogStats> {
   late List<Recolte> recoltes = [];
+  // ignore: unused_field
   List<bool> _isOpen = [false, false];
 
   @override

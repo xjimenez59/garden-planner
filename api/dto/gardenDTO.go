@@ -17,6 +17,7 @@ type GardenDTO struct {
 	MoisFinSemis   int             `json:"moisFinSemis"`
 	Localisation   string          `json:"localisation"`
 	Surface        int             `json:"surface"`
+	MeteofSite     string          `json:"meteofSite"`
 	Jardiniers     []GardenRoleDTO `json:"jardiniers"`
 }
 
@@ -28,6 +29,7 @@ func (d *GardenDTO) FromGardenModel(g models.Garden) {
 	d.MoisFinSemis = g.MoisFinSemis
 	d.Localisation = g.Localisation
 	d.Surface = g.Surface
+	d.MeteofSite = g.MeteofSite
 	d.Jardiniers = make([]GardenRoleDTO, 0)
 	for _, v := range g.Jardiniers {
 		d.Jardiniers = append(d.Jardiniers, GardenRoleDTO{UserID: v.UserID, Role: v.Role})
@@ -43,6 +45,7 @@ func (d *GardenDTO) ToGardenModel() (models.Garden, error) {
 		MoisFinSemis:   d.MoisFinSemis,
 		Localisation:   d.Localisation,
 		Surface:        d.Surface,
+		MeteofSite:     d.MeteofSite,
 		Jardiniers:     make([]models.GardenRole, 0),
 	}
 	for _, v := range d.Jardiniers {

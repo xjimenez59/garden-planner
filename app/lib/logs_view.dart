@@ -2,14 +2,71 @@
 
 import 'package:app/action_log.dart';
 import 'package:app/garden_model.dart';
+import 'package:app/meteo_service.dart';
 import 'package:app/utils.dart';
 import 'package:flutter/material.dart';
+import 'package:weather_icons/weather_icons.dart';
+
+class MeteoWidget extends StatelessWidget {
+  final Meteo? meteo;
+
+  MeteoWidget({
+    super.key,
+    this.meteo,
+  }) {
+    iconeCiel = getIconeCiel();
+  }
+
+  Icon iconeCiel = Icon(Icons.remove);
+
+  Icon getIconeCiel() {
+    IconData icon;
+    if (meteo == null) {
+      icon = Icons.remove;
+    } else {
+      bool soleil =
+          ((meteo!.sigma ?? 0.0) >= 0.8) || ((meteo!.inst ?? 0.0) >= 6 * 60.0);
+      bool pluie = ((meteo!.drr ?? 0.0) > 60.0) || ((meteo!.rr ?? 0.0) > 2.0);
+      bool nuages = pluie ||
+          ((meteo!.sigma ?? 1.0) < 0.8) ||
+          ((meteo!.inst ?? 12 * 60.0) < 6 * 60.0);
+
+      if (soleil && !nuages) {
+        icon = WeatherIcons.day_sunny;
+      } else if (soleil && pluie) {
+        icon = WeatherIcons.day_rain;
+      } else if (soleil && nuages && !pluie) {
+        icon = WeatherIcons.day_cloudy;
+      } else if (!soleil && pluie) {
+        icon = WeatherIcons.rain;
+      } else if (!soleil && nuages && !pluie) {
+        icon = WeatherIcons.cloudy;
+      } else {
+        icon = Icons.remove;
+      }
+    }
+
+    return Icon(icon);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      child: IconButton(
+        icon: iconeCiel,
+        onPressed: () {},
+        color: Color(0xff212435),
+        iconSize: 18,
+      ),
+    );
+  }
+}
 
 class DaySeparator extends StatelessWidget {
   final DateTime date;
-  final String icon;
+  final Meteo? meteo;
 
-  const DaySeparator({super.key, required this.date, required this.icon});
+  const DaySeparator({super.key, required this.date, this.meteo});
 
   @override
   Widget build(BuildContext context) {
@@ -73,12 +130,7 @@ class DaySeparator extends StatelessWidget {
                   ),
                 ),
               ),
-              IconButton(
-                icon: Icon(Icons.wb_sunny),
-                onPressed: () {},
-                color: Color(0xff212435),
-                iconSize: 18,
-              ),
+              MeteoWidget(key: key, meteo: meteo),
             ],
           ),
         ],

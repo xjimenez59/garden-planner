@@ -49,7 +49,8 @@ func createTables(db *sql.DB) error {
 			mois_fin_recolte INTEGER NOT NULL DEFAULT 0,
 			mois_fin_semis INTEGER NOT NULL DEFAULT 0,
 			localisation TEXT NOT NULL DEFAULT '',
-			surface INTEGER NOT NULL DEFAULT 0
+			surface INTEGER NOT NULL DEFAULT 0,
+			meteofrance_site TEXT NOT NULL DEFAULT ''
 		)`,
 		`CREATE TABLE IF NOT EXISTS garden_jardinier (
 			garden_id TEXT NOT NULL,
@@ -81,5 +82,14 @@ func createTables(db *sql.DB) error {
 			return err
 		}
 	}
+
+	// Migrations additives (ignorées si la colonne existe déjà)
+	migrations := []string{
+		`ALTER TABLE garden ADD COLUMN meteofrance_site TEXT NOT NULL DEFAULT ''`,
+	}
+	for _, stmt := range migrations {
+		db.Exec(stmt) // nolint: errcheck — échec normal si la colonne existe déjà
+	}
+
 	return nil
 }

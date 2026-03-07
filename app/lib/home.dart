@@ -1,12 +1,13 @@
-///File download from FlutterViz- Drag and drop a tools. For more details visit https://flutterviz.io/
+//File download from FlutterViz- Drag and drop a tools. For more details visit https://flutterviz.io/
 
-///File download from FlutterViz- Drag and drop a tools. For more details visit https://flutterviz.io/
+//File download from FlutterViz- Drag and drop a tools. For more details visit https://flutterviz.io/
 
 // ignore_for_file: prefer_const_constructors
 
 import 'package:app/action_log.dart';
 import 'package:app/garden_model.dart';
 import 'package:app/gardens_view.dart';
+import 'package:app/meteo_service.dart';
 import 'package:app/stats_view.dart';
 import 'package:flutter/material.dart';
 import 'package:app/logs_view.dart';
@@ -35,6 +36,7 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   late List<ActionLog> actionLogs = [];
   late List<Garden> jardins = [];
+  List<Meteo> meteoData = [];
   TextEditingController filterController = TextEditingController();
   int currentPage = 0;
   Garden? selectedGarden;
@@ -55,8 +57,22 @@ class _MyHomePageState extends State<MyHomePage> {
     if (jardins.isNotEmpty) {
       selectedGarden = jardins.first;
       actionLogs = (await ApiService().getLogs(selectedGarden!))!;
+      await _loadMeteo(selectedGarden!);
     }
     Future.delayed(const Duration(seconds: 1)).then((value) => setState(() {}));
+  }
+
+  Future<void> _loadMeteo(Garden garden) async {
+    if (garden.MeteofSite.isEmpty) return;
+    final now = DateTime.now();
+    final dateDeb = DateTime(now.year - 3, now.month, now.day);
+    String fmt(DateTime d) =>
+        '${d.year}${d.month.toString().padLeft(2, '0')}${d.day.toString().padLeft(2, '0')}';
+    meteoData = await MeteoService().getMeteo(
+      garden.MeteofSite,
+      dateDeb: fmt(dateDeb),
+      dateFin: fmt(now),
+    );
   }
 
   Future<void> _onRefresh() async {
@@ -125,7 +141,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
                       if (!(lastDate.sameDayAs(a.dateAction))) {
                         lastDate = a.dateAction;
-                        results.add(DaySeparator(date: a.dateAction, icon: ""));
+                        Meteo? meteo = meteoData
+                            .where((m) => m.date == a.dateAction)
+                            .firstOrNull;
+                        results.add(
+                            DaySeparator(date: a.dateAction, meteo: meteo));
                       }
                       bool showDivider = (index == filteredActionLogs.length) ||
                           (filteredActionLogs[index]
@@ -135,7 +155,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           key: Key(a.id),
                           onDismissed: onTileDismissed(index - 1),
                           background: Container(
-                              color: Colors.red.shade100,
+                              color: Colors.white,
                               margin: EdgeInsets.only(bottom: 0)),
                           child: InkWell(
                             onTap: onTileTap(a),
@@ -200,8 +220,8 @@ class _MyHomePageState extends State<MyHomePage> {
                 )));
     if (result != null) {
       selectedGarden = result;
-
       actionLogs = (await ApiService().getLogs(selectedGarden!))!;
+      await _loadMeteo(selectedGarden!);
     }
     setState(() {});
   }

@@ -76,7 +76,7 @@ class _GardenForm extends State<GardenForm> {
             ),
             DropdownButtonFormField(
               items: _monthsSelectItems(),
-              value: garden.MoisFinRecolte,
+              initialValue: garden.MoisFinRecolte,
               onChanged: (value) {
                 garden.MoisFinRecolte = value!;
                 refresh();

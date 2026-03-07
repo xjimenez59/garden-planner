@@ -13,19 +13,20 @@ type GardenRole struct {
 }
 
 type Garden struct {
-	ID             string       `json:"_id"`
-	Nom            string       `json:"nom"`
-	Notes          string       `json:"notes"`
-	MoisFinRecolte int          `json:"moisFinRecolte"`
-	MoisFinSemis   int          `json:"moisFinSemis"`
-	Localisation   string       `json:"localisation"`
-	Surface        int          `json:"surface"`
-	Jardiniers     []GardenRole `json:"jardiniers"`
+	ID              string       `json:"_id"`
+	Nom             string       `json:"nom"`
+	Notes           string       `json:"notes"`
+	MoisFinRecolte  int          `json:"moisFinRecolte"`
+	MoisFinSemis    int          `json:"moisFinSemis"`
+	Localisation    string       `json:"localisation"`
+	Surface         int          `json:"surface"`
+	MeteofSite      string       `json:"meteofSite"`
+	Jardiniers      []GardenRole `json:"jardiniers"`
 }
 
 func GetGardens(ctx context.Context, userID string) ([]Garden, error) {
 	rows, err := config.DB.QueryContext(ctx, `
-		SELECT DISTINCT g.id, g.nom, g.notes, g.mois_fin_recolte, g.mois_fin_semis, g.localisation, g.surface
+		SELECT DISTINCT g.id, g.nom, g.notes, g.mois_fin_recolte, g.mois_fin_semis, g.localisation, g.surface, g.meteofrance_site
 		FROM garden g
 		INNER JOIN garden_jardinier gj ON g.id = gj.garden_id
 		WHERE gj.user_id = ?`, userID)
@@ -37,7 +38,7 @@ func GetGardens(ctx context.Context, userID string) ([]Garden, error) {
 	gardens := make([]Garden, 0)
 	for rows.Next() {
 		var g Garden
-		if err := rows.Scan(&g.ID, &g.Nom, &g.Notes, &g.MoisFinRecolte, &g.MoisFinSemis, &g.Localisation, &g.Surface); err != nil {
+		if err := rows.Scan(&g.ID, &g.Nom, &g.Notes, &g.MoisFinRecolte, &g.MoisFinSemis, &g.Localisation, &g.Surface, &g.MeteofSite); err != nil {
 			return nil, err
 		}
 		g.Jardiniers, err = getJardiniers(ctx, g.ID)
@@ -70,9 +71,9 @@ func getJardiniers(ctx context.Context, gardenID string) ([]GardenRole, error) {
 func GetGarden(ctx context.Context, id string) (Garden, error) {
 	var g Garden
 	err := config.DB.QueryRowContext(ctx, `
-		SELECT id, nom, notes, mois_fin_recolte, mois_fin_semis, localisation, surface
+		SELECT id, nom, notes, mois_fin_recolte, mois_fin_semis, localisation, surface, meteofrance_site
 		FROM garden WHERE id = ?`, id).
-		Scan(&g.ID, &g.Nom, &g.Notes, &g.MoisFinRecolte, &g.MoisFinSemis, &g.Localisation, &g.Surface)
+		Scan(&g.ID, &g.Nom, &g.Notes, &g.MoisFinRecolte, &g.MoisFinSemis, &g.Localisation, &g.Surface, &g.MeteofSite)
 	if err != nil {
 		return g, err
 	}
@@ -92,16 +93,17 @@ func (g *Garden) Save(ctx context.Context) (string, error) {
 	defer tx.Rollback()
 
 	_, err = tx.ExecContext(ctx, `
-		INSERT INTO garden (id, nom, notes, mois_fin_recolte, mois_fin_semis, localisation, surface)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO garden (id, nom, notes, mois_fin_recolte, mois_fin_semis, localisation, surface, meteofrance_site)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(id) DO UPDATE SET
 			nom = excluded.nom,
 			notes = excluded.notes,
 			mois_fin_recolte = excluded.mois_fin_recolte,
 			mois_fin_semis = excluded.mois_fin_semis,
 			localisation = excluded.localisation,
-			surface = excluded.surface`,
-		g.ID, g.Nom, g.Notes, g.MoisFinRecolte, g.MoisFinSemis, g.Localisation, g.Surface)
+			surface = excluded.surface,
+			meteofrance_site = excluded.meteofrance_site`,
+		g.ID, g.Nom, g.Notes, g.MoisFinRecolte, g.MoisFinSemis, g.Localisation, g.Surface, g.MeteofSite)
 	if err != nil {
 		return "", err
 	}

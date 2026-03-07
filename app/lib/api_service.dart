@@ -11,13 +11,14 @@ import 'constants.dart';
 import 'action_log.dart';
 import 'legumes_model.dart';
 
-import 'package:firebase_auth/firebase_auth.dart';
+//import 'package:firebase_auth/firebase_auth.dart';
 
 class ApiService {
   Map<String, String> getHeaders() {
     return {
       HttpHeaders.authorizationHeader:
-          '${FirebaseAuth.instance.currentUser?.uid}',
+          // '${FirebaseAuth.instance.currentUser?.uid}',
+          ApiConstants.defaultUser,
 //      HttpHeaders.accessControlAllowOriginHeader: '*',
 //      HttpHeaders.accessControlAllowMethodsHeader:
 //          "GET,PUT,PATCH,POST,DELETE,OPTIONS",
@@ -28,7 +29,7 @@ class ApiService {
 
   Future<List<ActionLog>?> getLogs(Garden jardin) async {
     try {
-      var url = Uri.parse(ApiConstants.baseUrl + "/garden/${jardin.ID}/logs");
+      var url = Uri.parse("${ApiConstants.baseUrl}/garden/${jardin.ID}/logs");
       var response = await http.get(url);
       if (response.statusCode == 200) {
         List<ActionLog> model = actionLogFromJson(response.body);
@@ -173,7 +174,7 @@ class ApiService {
           Uri.parse("${ApiConstants.baseUrl}${ApiConstants.logEndpoint}/$id");
       var response = await http.delete(url);
       if (response.statusCode == 200) {
-        dynamic result = jsonDecode(response.body);
+        //dynamic result = jsonDecode(response.body);
         return true;
       }
     } catch (e) {
@@ -210,7 +211,7 @@ class ApiService {
           Uri.parse("${ApiConstants.baseUrl}${ApiConstants.photoEndPoint}/$id");
       var response = await http.delete(url);
       if (response.statusCode == 200) {
-        dynamic result = jsonDecode(response.body);
+        //dynamic result = jsonDecode(response.body);
         return true;
       }
     } catch (e) {
