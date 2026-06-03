@@ -15,15 +15,20 @@ ENV PATH="${PATH}:/usr/local/flutter/bin:/usr/local/flutter/bin/cache/dart-sdk/b
 
 # Run flutter doctor
 RUN flutter doctor -v
-RUN flutter channel master
+RUN flutter channel stable
 RUN flutter upgrade
+
+ARG API_BASE_URL=http://localhost:8081
+ARG METEO_BASE_URL=http://localhost:8082
 
 # Copy files to container and build
 RUN mkdir /app/
 COPY . /app/
 WORKDIR /app/
 
-RUN flutter build web
+RUN flutter build web \
+    --dart-define=API_BASE_URL=$API_BASE_URL \
+    --dart-define=METEO_BASE_URL=$METEO_BASE_URL
 
 # Stage 2 - Create the run-time image
 FROM nginx:1.21.1-alpine AS windows
@@ -56,17 +61,22 @@ ENV PATH="${PATH}:/usr/local/flutter/bin:/usr/local/flutter/bin/cache/dart-sdk/b
 
 # Run flutter doctor
 RUN flutter doctor -v
-RUN flutter channel master
+RUN flutter channel stable
 RUN flutter upgrade --force
 
 FROM build-rpi-base AS build-rpi
+
+ARG API_BASE_URL=http://localhost:8081
+ARG METEO_BASE_URL=http://localhost:8082
 
 # Copy files to container and build
 RUN mkdir /app/
 COPY . /app/
 WORKDIR /app/
 
-RUN flutter build web
+RUN flutter build web \
+    --dart-define=API_BASE_URL=$API_BASE_URL \
+    --dart-define=METEO_BASE_URL=$METEO_BASE_URL
 
 # Stage 2 - Create the run-time image
 FROM  --platform=$BUILDPLATFORM arm64v8/nginx:1.21.1-alpine AS raspberry
@@ -102,17 +112,22 @@ ENV PATH="${PATH}:/usr/local/flutter/bin:/usr/local/flutter/bin/cache/dart-sdk/b
 
 # Run flutter doctor
 RUN flutter doctor -v
-RUN flutter channel master
+RUN flutter channel stable
 RUN flutter upgrade --force
 
 FROM build-nas-base AS build-nas
+
+ARG API_BASE_URL=http://localhost:8081
+ARG METEO_BASE_URL=http://localhost:8082
 
 # Copy files to container and build
 RUN mkdir /app/
 COPY . /app/
 WORKDIR /app/
 
-RUN flutter build web
+RUN flutter build web \
+    --dart-define=API_BASE_URL=$API_BASE_URL \
+    --dart-define=METEO_BASE_URL=$METEO_BASE_URL
 
 # Stage 2 - Create the run-time image
 FROM  --platform=$BUILDPLATFORM nginx:stable-alpine3.23 AS nas

@@ -1,9 +1,10 @@
+const _apiBaseUrl = String.fromEnvironment(
+  'API_BASE_URL',
+  defaultValue: 'http://localhost:8081',
+);
+
 class ApiConstants {
-  // static String baseUrl = 'http://10.0.2.2:8081'; //-- pour l'émulateur Android
-  static String baseUrl = 'http://localhost:8081';
-  //static String baseUrl = 'http://192.168.1.76:8081';
-  //static String baseUrl = 'https://gardenplanner.app.jactez.com:8083/api';
-  //static String baseUrl = 'https://gardenplanner.jactez.com/api';
+  static String baseUrl = _apiBaseUrl;
 
   static String logsEndpoint = '/logs';
   static String logEndpoint = '/log';

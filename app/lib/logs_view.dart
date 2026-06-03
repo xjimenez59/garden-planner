@@ -5,7 +5,6 @@ import 'package:app/garden_model.dart';
 import 'package:app/meteo_service.dart';
 import 'package:app/utils.dart';
 import 'package:flutter/material.dart';
-import 'package:weather_icons/weather_icons.dart';
 
 class MeteoWidget extends StatelessWidget {
   final Meteo? meteo;
@@ -32,15 +31,15 @@ class MeteoWidget extends StatelessWidget {
           ((meteo!.inst ?? 12 * 60.0) < 6 * 60.0);
 
       if (soleil && !nuages) {
-        icon = WeatherIcons.day_sunny;
+        icon = Icons.wb_sunny;
       } else if (soleil && pluie) {
-        icon = WeatherIcons.day_rain;
+        icon = Icons.wb_sunny_outlined;
       } else if (soleil && nuages && !pluie) {
-        icon = WeatherIcons.day_cloudy;
+        icon = Icons.cloud_queue;
       } else if (!soleil && pluie) {
-        icon = WeatherIcons.rain;
+        icon = Icons.water_drop;
       } else if (!soleil && nuages && !pluie) {
-        icon = WeatherIcons.cloudy;
+        icon = Icons.cloud;
       } else {
         icon = Icons.remove;
       }

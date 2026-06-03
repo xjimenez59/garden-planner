@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"garden-planner/meteo/config"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -529,6 +530,14 @@ func GetMeteoQuotidien(ctx context.Context, station, dateDeb, dateFin string) ([
 
 // ---- MétéoFrance API calls --------------------------------------------------
 
+// toMFDate converts YYYYMMDD to the ISO-8601 format expected by MétéoFrance API (YYYY-MM-DDTHH:MM:SSZ).
+func toMFDate(s string) (string, error) {
+	if len(s) != 8 {
+		return "", fmt.Errorf("format de date invalide: %q (attendu YYYYMMDD)", s)
+	}
+	return s[:4] + "-" + s[4:6] + "-" + s[6:] + "T00:00:00Z", nil
+}
+
 // MFCommandeQuotidienne orders daily climatological data for a station and date range.
 // It returns the raw JSON body and HTTP status code from the MF API.
 func MFCommandeQuotidienne(station, dateDeb, dateFin string) ([]byte, int, error) {
@@ -537,8 +546,17 @@ func MFCommandeQuotidienne(station, dateDeb, dateFin string) ([]byte, int, error
 		return nil, 0, fmt.Errorf("authentification MF: %w", err)
 	}
 
+	mfDeb, err := toMFDate(dateDeb)
+	if err != nil {
+		return nil, 0, err
+	}
+	mfFin, err := toMFDate(dateFin)
+	if err != nil {
+		return nil, 0, err
+	}
+
 	url := fmt.Sprintf("%s/commande-station/quotidienne?id-station=%s&date-deb-periode=%s&date-fin-periode=%s",
-		mfAPIBase(), station, dateDeb, dateFin)
+		mfAPIBase(), station, mfDeb, mfFin)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -581,11 +599,22 @@ func MFGetFichier(idCmde string) ([]MFQuotidien, int, error) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusCreated { //-- 201 si les données sont dispo ; 202 s'il faut recommencer plus tard
+	// 201 = données disponibles, 202/204 = pas encore prêt (réessayer)
+	if resp.StatusCode == http.StatusAccepted || resp.StatusCode == http.StatusNoContent {
+		return nil, http.StatusAccepted, fmt.Errorf("fichier en cours de préparation")
+	}
+	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		return nil, resp.StatusCode, fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
 	}
 
 	rows, err := ParseMFCSV(resp.Body)
+	if err == nil {
+		dates := make([]string, 0, len(rows))
+		for _, r := range rows {
+			dates = append(dates, r.DATE)
+		}
+		log.Printf("MF import: %d ligne(s) reçue(s), dates=%v", len(rows), dates)
+	}
 	return rows, resp.StatusCode, err
 }

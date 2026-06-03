@@ -42,6 +42,7 @@ class MyApp extends StatelessWidget {
       title: 'Garden Planner',
       theme: ThemeData(
         primarySwatch: Colors.blue,
+        scaffoldBackgroundColor: Colors.white,
       ),
       locale: Locale("fr"),
       localizationsDelegates: [

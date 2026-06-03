@@ -16,7 +16,10 @@ services:
   webapp:
     build:
       context: ./app
-      target: nas   # debug, windows , nasou raspberry
+      target: nas   # debug, windows , nas ou raspberry
+      args:
+        API_BASE_URL: /api
+        METEO_BASE_URL: /meteo
     ports:
       - "8080:80"
       - "8083:443"

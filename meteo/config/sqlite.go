@@ -28,7 +28,7 @@ func ConnectDatabase() *sql.DB {
 	if _, err = db.Exec("PRAGMA foreign_keys = ON"); err != nil {
 		log.Fatal(err)
 	}
-	if _, err = db.Exec("PRAGMA journal_mode = WAL"); err != nil {
+	if _, err = db.Exec("PRAGMA journal_mode = DELETE"); err != nil {
 		log.Fatal(err)
 	}
 

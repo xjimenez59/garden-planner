@@ -74,6 +74,101 @@ func RevolutionCyclique(date time.Time) string {
 	return "lune_decroissante"
 }
 
+// luneMeanElements retourne l'anomalie moyenne M, l'argument de latitude F
+// et la longitude du nœud ascendant Omega pour n jours depuis J2000.0.
+func luneMeanElements(n float64) (M, F, Omega float64) {
+	M     = normDeg(134.9633964 + 13.06499295*n)
+	F     = normDeg(93.2720950 + 13.22935024*n)
+	Omega = normDeg(125.0445 - 0.05295392*n)
+	return
+}
+
+// JourBiodynamique retourne le type de jour biodynamique (calendrier Maria Thun)
+// et le signe zodiacal sidéral de la lune pour la date donnée.
+//
+// La lune traverse les 12 signes du zodiaque sidéral en ~27,32 jours.
+// Chaque signe appartient à un élément qui détermine le type de jour :
+//   - Feu (Bélier, Lion, Sagittaire)      → "jour_fruit"
+//   - Terre (Taureau, Vierge, Capricorne) → "jour_racine"
+//   - Air (Gémeaux, Balance, Verseau)     → "jour_fleur"
+//   - Eau (Cancer, Scorpion, Poissons)    → "jour_feuille"
+func JourBiodynamique(date time.Time) (string, string) {
+	n := julianDay(date) - 2451545.0
+	tropical := luneEcliptiqueLongitude(n)
+
+	// Ayanamsha de Lahiri : 23.852° à J2000.0, progression de 50.3"/an ≈ 0.01397°/an
+	aya := 23.852 + (n/365.25)*0.01397
+	sid := normDeg(tropical - aya)
+	idx := int(sid / 30) // 0=Bélier … 11=Poissons
+
+	signes := [12]string{
+		"belier", "taureau", "gemeaux", "cancer",
+		"lion", "vierge", "balance", "scorpion",
+		"sagittaire", "capricorne", "verseau", "poissons",
+	}
+	// Feu, Terre, Air, Eau — séquence répétée 3 fois
+	elements := [12]string{
+		"jour_fruit", "jour_racine", "jour_fleur", "jour_feuille",
+		"jour_fruit", "jour_racine", "jour_fleur", "jour_feuille",
+		"jour_fruit", "jour_racine", "jour_fleur", "jour_feuille",
+	}
+	return elements[idx], signes[idx]
+}
+
+// ApogeePerigee retourne l'état orbital courant et les dates du prochain périgée
+// et du prochain apogée.
+//
+//   - etat : "perigee" | "apogee" | "normal"
+//   - périgée : anomalie moyenne M ≈ 0° (lune au plus près de la Terre)
+//   - apogée  : anomalie moyenne M ≈ 180° (lune au plus loin de la Terre)
+func ApogeePerigee(date time.Time) (etat, prochainPerigee, prochainApogee string) {
+	const rate = 13.06499295 // degrés/jour de l'anomalie moyenne M
+
+	n := julianDay(date) - 2451545.0
+	M, _, _ := luneMeanElements(n)
+
+	toDate := func(days float64) string {
+		dur := time.Duration(days * 24 * 60 * 60 * 1e9)
+		return date.UTC().Add(dur).Format("2006-01-02")
+	}
+
+	prochainPerigee = toDate(normDeg(360.0-M) / rate)
+	prochainApogee = toDate(normDeg(180.0-M) / rate)
+
+	switch {
+	case M < 10 || M > 350:
+		etat = "perigee"
+	case M > 170 && M < 190:
+		etat = "apogee"
+	default:
+		etat = "normal"
+	}
+	return
+}
+
+// NoeudsLunaires retourne la longitude du nœud ascendant et les dates des
+// prochains passages aux nœuds ascendant et descendant.
+//
+// La lune passe au nœud ascendant quand son argument de latitude F ≈ 0°,
+// et au nœud descendant quand F ≈ 180°.
+func NoeudsLunaires(date time.Time) (omegaDeg float64, prochainAsc, prochainDsc string) {
+	const rate = 13.22935024 // degrés/jour de l'argument de latitude F
+
+	n := julianDay(date) - 2451545.0
+	_, F, Omega := luneMeanElements(n)
+
+	omegaDeg = math.Round(Omega*10) / 10
+
+	toDate := func(days float64) string {
+		dur := time.Duration(days * 24 * 60 * 60 * 1e9)
+		return date.UTC().Add(dur).Format("2006-01-02")
+	}
+
+	prochainAsc = toDate(normDeg(360.0-F) / rate)
+	prochainDsc = toDate(normDeg(180.0-F) / rate)
+	return
+}
+
 // julianDay calcule le Jour Julien à partir d'une date UTC.
 func julianDay(t time.Time) float64 {
 	t = t.UTC()

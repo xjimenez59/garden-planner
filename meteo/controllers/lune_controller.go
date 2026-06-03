@@ -30,9 +30,21 @@ func GetLune(c *gin.Context) {
 		}
 	}
 
+	jourBio, signe := models.JourBiodynamique(date)
+	etatOrbite, perigee, apogee := models.ApogeePerigee(date)
+	omegaDeg, noeudAsc, noeudDsc := models.NoeudsLunaires(date)
+
 	c.JSON(http.StatusOK, gin.H{
-		"date":                   date.Format("2006-01-02"),
-		"revolution_periodique":  models.RevolutionPeriodique(date),
-		"revolution_cyclique":    models.RevolutionCyclique(date),
+		"date":                      date.Format("2006-01-02"),
+		"revolution_periodique":     models.RevolutionPeriodique(date),
+		"revolution_cyclique":       models.RevolutionCyclique(date),
+		"jour_biodynamique":         jourBio,
+		"signe_zodiaque":            signe,
+		"noeud_ascendant_longitude": omegaDeg,
+		"prochain_noeud_ascendant":  noeudAsc,
+		"prochain_noeud_descendant": noeudDsc,
+		"prochain_perigee":          perigee,
+		"prochain_apogee":           apogee,
+		"etat_orbite":               etatOrbite,
 	})
 }
