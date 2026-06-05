@@ -10,7 +10,7 @@ services:
       SQLITE_PATH: /opt/app/api/garden-planner.db
     volumes:
       - type: bind
-        source: /local/containers-data/garden-planner/api
+        source: ./data/api
         target: /opt/app/api
 
   webapp:
@@ -22,7 +22,6 @@ services:
         METEO_BASE_URL: /meteo
     ports:
       - "8080:80"
-      - "8083:443"
     volumes:
       - ./nginx/conf/:/etc/nginx/conf.d/:ro
 
@@ -39,7 +38,7 @@ services:
         source: garden-planner-meteo-volume
         target: /opt/app/meteo
       - type: bind
-        source: /local/containers-data/garden-planner/meteo-sqlite
+        source: ./data/meteo
         target: /data
 
 volumes:

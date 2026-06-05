@@ -37,6 +37,7 @@ class _MyHomePageState extends State<MyHomePage> {
   late List<ActionLog> actionLogs = [];
   late List<Garden> jardins = [];
   List<Meteo> meteoData = [];
+  List<LuneDay> luneData = [];
   TextEditingController filterController = TextEditingController();
   int currentPage = 0;
   Garden? selectedGarden;
@@ -57,21 +58,30 @@ class _MyHomePageState extends State<MyHomePage> {
     if (jardins.isNotEmpty) {
       selectedGarden = jardins.first;
       actionLogs = (await ApiService().getLogs(selectedGarden!))!;
-      await _loadMeteo(selectedGarden!);
     }
-    Future.delayed(const Duration(seconds: 1)).then((value) => setState(() {}));
+    setState(() {});
+    if (selectedGarden != null) {
+      await _loadMeteo(selectedGarden!);
+      setState(() {});
+    }
   }
 
   Future<void> _loadMeteo(Garden garden) async {
-    if (garden.MeteofSite.isEmpty) return;
     final now = DateTime.now();
     final dateDeb = DateTime(now.year - 3, now.month, now.day);
-    String fmt(DateTime d) =>
+
+    String fmtYMD(DateTime d) =>
+        '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+    String fmtYMDcompact(DateTime d) =>
         '${d.year}${d.month.toString().padLeft(2, '0')}${d.day.toString().padLeft(2, '0')}';
+
+    luneData = await MeteoService().getLuneRange(fmtYMD(dateDeb), fmtYMD(now));
+
+    if (garden.MeteofSite.isEmpty) return;
     meteoData = await MeteoService().getMeteo(
       garden.MeteofSite,
-      dateDeb: fmt(dateDeb),
-      dateFin: fmt(now),
+      dateDeb: fmtYMDcompact(dateDeb),
+      dateFin: fmtYMDcompact(now),
     );
   }
 
@@ -144,8 +154,13 @@ class _MyHomePageState extends State<MyHomePage> {
                         Meteo? meteo = meteoData
                             .where((m) => m.date == a.dateAction)
                             .firstOrNull;
-                        results.add(
-                            DaySeparator(date: a.dateAction, meteo: meteo));
+                        LuneDay? luneDay = luneData
+                            .where((l) => l.date == a.dateAction)
+                            .firstOrNull;
+                        results.add(DaySeparator(
+                            date: a.dateAction,
+                            meteo: meteo,
+                            luneDay: luneDay));
                       }
                       bool showDivider = (index == filteredActionLogs.length) ||
                           (filteredActionLogs[index]

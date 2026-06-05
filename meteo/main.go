@@ -36,6 +36,7 @@ func main() {
 	router.GET("/meteo", controllers.MF_GetMeteo)
 
 	router.GET("/lune", controllers.GetLune)
+	router.GET("/lune/range", controllers.GetLuneRange)
 
 	router.Run("0.0.0.0:8082")
 

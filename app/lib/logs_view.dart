@@ -5,6 +5,7 @@ import 'package:app/garden_model.dart';
 import 'package:app/meteo_service.dart';
 import 'package:app/utils.dart';
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 class MeteoWidget extends StatelessWidget {
   final Meteo? meteo;
@@ -33,7 +34,7 @@ class MeteoWidget extends StatelessWidget {
       if (soleil && !nuages) {
         icon = Icons.wb_sunny;
       } else if (soleil && pluie) {
-        icon = Icons.wb_sunny_outlined;
+        icon = Symbols.weather_mix;
       } else if (soleil && nuages && !pluie) {
         icon = Icons.cloud_queue;
       } else if (!soleil && pluie) {
@@ -61,11 +62,46 @@ class MeteoWidget extends StatelessWidget {
   }
 }
 
+class BioDynamiqueWidget extends StatelessWidget {
+  final LuneDay? luneDay;
+  const BioDynamiqueWidget({super.key, this.luneDay});
+
+  String _emoji() {
+    switch (luneDay!.jourBiodynamique) {
+      case 'jour_fruit':
+        return '🍓';
+      case 'jour_racine':
+        return '🥕';
+      case 'jour_fleur':
+        return '🌸';
+      case 'jour_feuille':
+        return '🌿';
+      default:
+        return '';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (luneDay == null) return const SizedBox.shrink();
+    final emoji = _emoji();
+    if (emoji.isEmpty) return const SizedBox.shrink();
+    return Tooltip(
+      message: luneDay!.jourBiodynamique,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 2),
+        child: Text(emoji, style: const TextStyle(fontSize: 16)),
+      ),
+    );
+  }
+}
+
 class DaySeparator extends StatelessWidget {
   final DateTime date;
   final Meteo? meteo;
+  final LuneDay? luneDay;
 
-  const DaySeparator({super.key, required this.date, this.meteo});
+  const DaySeparator({super.key, required this.date, this.meteo, this.luneDay});
 
   @override
   Widget build(BuildContext context) {
@@ -130,6 +166,7 @@ class DaySeparator extends StatelessWidget {
                 ),
               ),
               MeteoWidget(key: key, meteo: meteo),
+              BioDynamiqueWidget(luneDay: luneDay),
             ],
           ),
         ],

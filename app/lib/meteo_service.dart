@@ -93,6 +93,20 @@ class Meteo {
 List<Meteo> _meteoListFromJson(String body) =>
     (jsonDecode(body) as List).map((e) => Meteo.fromJson(e)).toList();
 
+class LuneDay {
+  final DateTime date;
+  final String jourBiodynamique; // Fruit, Racine, Fleur, Feuille
+  final String signeZodiaque;
+
+  LuneDay({required this.date, required this.jourBiodynamique, required this.signeZodiaque});
+
+  factory LuneDay.fromJson(Map<String, dynamic> j) => LuneDay(
+        date: DateTime.parse(j['date'] as String),
+        jourBiodynamique: j['jour_biodynamique'] as String,
+        signeZodiaque: j['signe_zodiaque'] as String,
+      );
+}
+
 class MeteoService {
   /// Retourne les relevés MétéoFrance pour la station [site].
   /// [dateDeb] et [dateFin] sont au format YYYYMMDD.
@@ -115,6 +129,27 @@ class MeteoService {
       log('MeteoService.getMeteo: HTTP ${response.statusCode}');
     } catch (e) {
       log('MeteoService.getMeteo: $e');
+    }
+    return [];
+  }
+
+  /// Retourne le jour biodynamique pour chaque jour entre [dateDeb] et [dateFin].
+  /// [dateDeb] et [dateFin] sont au format YYYY-MM-DD.
+  Future<List<LuneDay>> getLuneRange(String dateDeb, String dateFin) async {
+    try {
+      final url = Uri.parse('$_meteoBaseUrl/lune/range').replace(queryParameters: {
+        'date_deb': dateDeb,
+        'date_fin': dateFin,
+      });
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        return (jsonDecode(response.body) as List)
+            .map((e) => LuneDay.fromJson(e))
+            .toList();
+      }
+      log('MeteoService.getLuneRange: HTTP ${response.statusCode}');
+    } catch (e) {
+      log('MeteoService.getLuneRange: $e');
     }
     return [];
   }
