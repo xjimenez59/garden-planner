@@ -13,6 +13,20 @@ List<ActionLog> actionLogFromJson(String str) =>
 
 String actionLogToJson(ActionLog data) => json.encode(data.toJson());
 
+class LogsPage {
+  final List<ActionLog> logs;
+  final bool hasMore;
+  final String? oldestDate;
+
+  LogsPage({required this.logs, required this.hasMore, this.oldestDate});
+
+  factory LogsPage.fromJson(Map<String, dynamic> j) => LogsPage(
+        logs: (j['logs'] as List).map((e) => ActionLog.fromJson(e)).toList(),
+        hasMore: j['has_more'] as bool,
+        oldestDate: j['oldest_date'] as String?,
+      );
+}
+
 class ActionLog {
   ActionLog({
     this.id = "",

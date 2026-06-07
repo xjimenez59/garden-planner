@@ -528,6 +528,64 @@ func GetMeteoQuotidien(ctx context.Context, station, dateDeb, dateFin string) ([
 	return result, rows.Err()
 }
 
+// GetMeteoQuotidienForDates retourne les données pour une liste précise de dates (format YYYYMMDD).
+// Construit dynamiquement un IN (?, ?, ...) pour éviter de charger des plages avec des trous.
+func GetMeteoQuotidienForDates(ctx context.Context, station string, dates []string) ([]MeteoQuotidienSummary, error) {
+	if len(dates) == 0 {
+		return nil, nil
+	}
+
+	placeholders := make([]string, len(dates))
+	args := make([]any, 0, len(dates)+1)
+	args = append(args, station)
+	for i, d := range dates {
+		placeholders[i] = "?"
+		args = append(args, d)
+	}
+
+	query := `SELECT poste, date, rr, drr, dxy, ffm, fxi, tm, tn, tx, inst, qinst, sigma, qsigma, nb300, qnb300, dg
+		FROM meteofrance_quotidien
+		WHERE poste = ? AND date IN (` + strings.Join(placeholders, ",") + `)
+		ORDER BY date ASC`
+
+	rows, err := config.DB.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	ns := func(n sql.NullString) string {
+		if n.Valid {
+			return n.String
+		}
+		return ""
+	}
+
+	var result []MeteoQuotidienSummary
+	for rows.Next() {
+		var r MeteoQuotidienSummary
+		var rr, drr, dxy, ffm, fxi, tm, tn, tx, inst, qinst, sigma, qsigma, nb300, qnb300, dg sql.NullString
+		if err := rows.Scan(
+			&r.POSTE, &r.DATE,
+			&rr, &drr, &dxy, &ffm, &fxi,
+			&tm, &tn, &tx,
+			&inst, &qinst, &sigma, &qsigma,
+			&nb300, &qnb300, &dg,
+		); err != nil {
+			return nil, err
+		}
+		r.RR, r.DRR = ns(rr), ns(drr)
+		r.DXY, r.FFM, r.FXI = ns(dxy), ns(ffm), ns(fxi)
+		r.TM, r.TN, r.TX = ns(tm), ns(tn), ns(tx)
+		r.INST, r.QINST = ns(inst), ns(qinst)
+		r.SIGMA, r.QSIGMA = ns(sigma), ns(qsigma)
+		r.NB300, r.QNB300 = ns(nb300), ns(qnb300)
+		r.DG = ns(dg)
+		result = append(result, r)
+	}
+	return result, rows.Err()
+}
+
 // ---- MétéoFrance API calls --------------------------------------------------
 
 // toMFDate converts YYYYMMDD to the ISO-8601 format expected by MétéoFrance API (YYYY-MM-DDTHH:MM:SSZ).

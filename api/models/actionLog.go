@@ -27,30 +27,69 @@ type ActionLog struct {
 	Tags       []string `json:"tags"`
 }
 
-func GetLogs(ctx context.Context, jardinId string) ([]ActionLog, error) {
-	pastDate := time.Now().AddDate(0, -15, 0).Format("2006-01-02")
+type LogsPage struct {
+	Logs       []ActionLog `json:"logs"`
+	HasMore    bool        `json:"has_more"`
+	OldestDate string      `json:"oldest_date"`
+}
+
+func GetLogs(ctx context.Context, jardinId string, before string, limit int, search string) (LogsPage, error) {
+	if before == "" {
+		before = time.Now().AddDate(0, 0, 1).Format("2006-01-02") // demain pour inclure aujourd'hui
+	}
+	if limit <= 0 {
+		limit = 100
+	}
+	fetch := limit + 1 // N+1 pour détecter has_more
 
 	var rows *sql.Rows
 	var err error
 
-	if jardinId == "" {
+	if search != "" {
+		like := "%" + search + "%"
 		rows, err = config.DB.QueryContext(ctx, `
 			SELECT id, parent_id, jardin_id, date_action, action, statut, lieu, legume, variete, qte, poids, notes, photos, tags
 			FROM action_log
-			WHERE date_action >= ?
-			ORDER BY date_action DESC, legume ASC`, pastDate)
+			WHERE jardin_id = ? AND date_action < ?
+			  AND (legume LIKE ? OR action LIKE ? OR lieu LIKE ? OR variete LIKE ? OR notes LIKE ? OR tags LIKE ?)
+			ORDER BY date_action DESC, legume ASC
+			LIMIT ?`, jardinId, before, like, like, like, like, like, like, fetch)
+	} else if jardinId == "" {
+		rows, err = config.DB.QueryContext(ctx, `
+			SELECT id, parent_id, jardin_id, date_action, action, statut, lieu, legume, variete, qte, poids, notes, photos, tags
+			FROM action_log
+			WHERE date_action < ?
+			ORDER BY date_action DESC, legume ASC
+			LIMIT ?`, before, fetch)
 	} else {
 		rows, err = config.DB.QueryContext(ctx, `
 			SELECT id, parent_id, jardin_id, date_action, action, statut, lieu, legume, variete, qte, poids, notes, photos, tags
 			FROM action_log
-			WHERE jardin_id = ? AND date_action >= ?
-			ORDER BY date_action DESC, legume ASC`, jardinId, pastDate)
+			WHERE jardin_id = ? AND date_action < ?
+			ORDER BY date_action DESC, legume ASC
+			LIMIT ?`, jardinId, before, fetch)
 	}
 	if err != nil {
-		return nil, err
+		return LogsPage{}, err
 	}
 	defer rows.Close()
-	return scanActionLogs(rows)
+
+	logs, err := scanActionLogs(rows)
+	if err != nil {
+		return LogsPage{}, err
+	}
+
+	hasMore := len(logs) > limit
+	if hasMore {
+		logs = logs[:limit]
+	}
+
+	oldest := ""
+	if len(logs) > 0 {
+		oldest = logs[len(logs)-1].DateAction
+	}
+
+	return LogsPage{Logs: logs, HasMore: hasMore, OldestDate: oldest}, nil
 }
 
 func scanActionLogs(rows *sql.Rows) ([]ActionLog, error) {

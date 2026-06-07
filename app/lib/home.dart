@@ -8,6 +8,7 @@ import 'package:app/action_log.dart';
 import 'package:app/garden_model.dart';
 import 'package:app/gardens_view.dart';
 import 'package:app/meteo_service.dart';
+import 'package:app/previsions_view.dart';
 import 'package:app/stats_view.dart';
 import 'package:flutter/material.dart';
 import 'package:app/logs_view.dart';
@@ -38,51 +39,128 @@ class _MyHomePageState extends State<MyHomePage> {
   late List<Garden> jardins = [];
   List<Meteo> meteoData = [];
   List<LuneDay> luneData = [];
+  List<HourlyForecast> previsions = [];
   TextEditingController filterController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  bool _hasMore = true;
+  bool _loadingMore = false;
+  String? _beforeCursor;
+  // Mode recherche serveur
+  List<ActionLog> _searchResults = [];
+  bool _searchHasMore = false;
+  bool _searchLoading = false;
+  String? _searchBeforeCursor;
   int currentPage = 0;
   Garden? selectedGarden;
+
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     _getData();
   }
 
   @override
   void dispose() {
     filterController.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  void _onScroll() {
+    final pos = _scrollController.position;
+    if (pos.pixels <= pos.maxScrollExtent * 0.66) return;
+    if (filterController.text.isNotEmpty) {
+      if (_searchHasMore && !_searchLoading) _loadSearchPage(filterController.text);
+    } else {
+      if (_hasMore && !_loadingMore) _loadMoreLogs();
+    }
+  }
+
+  Future<void> _loadMoreLogs() async {
+    if (selectedGarden == null || !_hasMore || _loadingMore) return;
+    setState(() => _loadingMore = true);
+    final page = await ApiService().getLogs(selectedGarden!, before: _beforeCursor);
+    if (page != null && page.logs.isNotEmpty) {
+      final prevOldest = _beforeCursor;
+      setState(() {
+        actionLogs.addAll(page.logs);
+        _hasMore = page.hasMore;
+        _beforeCursor = page.oldestDate;
+        _loadingMore = false;
+      });
+      // Charger meteo/lune uniquement sur la nouvelle tranche
+      if (page.oldestDate != null && prevOldest != null) {
+        await _loadMeteoRange(page.oldestDate!, prevOldest);
+        setState(() {});
+      }
+    } else {
+      setState(() {
+        _hasMore = false;
+        _loadingMore = false;
+      });
+    }
   }
 
   void _getData() async {
     jardins = (await ApiService().getGardens())!;
     if (jardins.isNotEmpty) {
       selectedGarden = jardins.first;
-      actionLogs = (await ApiService().getLogs(selectedGarden!))!;
+      await _resetAndLoadLogs(selectedGarden!);
     }
     setState(() {});
     if (selectedGarden != null) {
-      await _loadMeteo(selectedGarden!);
+      await _loadPrevisions(selectedGarden!);
       setState(() {});
     }
   }
 
-  Future<void> _loadMeteo(Garden garden) async {
-    final now = DateTime.now();
-    final dateDeb = DateTime(now.year - 3, now.month, now.day);
+  Future<void> _resetAndLoadLogs(Garden garden) async {
+    actionLogs = [];
+    meteoData = [];
+    luneData = [];
+    _hasMore = true;
+    _beforeCursor = null;
 
-    String fmtYMD(DateTime d) =>
-        '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
-    String fmtYMDcompact(DateTime d) =>
-        '${d.year}${d.month.toString().padLeft(2, '0')}${d.day.toString().padLeft(2, '0')}';
+    final page = await ApiService().getLogs(garden);
+    if (page != null) {
+      actionLogs = page.logs;
+      _hasMore = page.hasMore;
+      _beforeCursor = page.oldestDate;
+      if (page.oldestDate != null) {
+        final today = DateTime.now();
+        final dateFin = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+        await _loadMeteoRange(page.oldestDate!, dateFin);
+      }
+    }
+  }
 
-    luneData = await MeteoService().getLuneRange(fmtYMD(dateDeb), fmtYMD(now));
+  String _fmtYMDcompact(String ymd) => ymd.replaceAll('-', '');
 
-    if (garden.MeteofSite.isEmpty) return;
-    meteoData = await MeteoService().getMeteo(
-      garden.MeteofSite,
-      dateDeb: fmtYMDcompact(dateDeb),
-      dateFin: fmtYMDcompact(now),
+  Future<void> _loadMeteoRange(String dateDeb, String dateFin) async {
+    final newLune = await MeteoService().getLuneRange(dateDeb, dateFin);
+    final existingDates = luneData.map((l) => l.date).toSet();
+    luneData.addAll(newLune.where((l) => !existingDates.contains(l.date)));
+
+    if (selectedGarden == null || selectedGarden!.MeteofSite.isEmpty) return;
+    final newMeteo = await MeteoService().getMeteo(
+      selectedGarden!.MeteofSite,
+      dateDeb: _fmtYMDcompact(dateDeb),
+      dateFin: _fmtYMDcompact(dateFin),
     );
+    final existingMeteo = meteoData.map((m) => m.date).toSet();
+    meteoData.addAll(newMeteo.where((m) => !existingMeteo.contains(m.date)));
+  }
+
+  Future<void> _loadPrevisions(Garden garden) async {
+    if (garden.MeteofSite.isEmpty) return;
+    previsions = await MeteoService().getPrevisions(garden.MeteofSite);
+  }
+
+  LuneDay? _luneDuJour() {
+    final today = DateTime.now();
+    final d = DateTime(today.year, today.month, today.day);
+    return luneData.where((l) => l.date == d).firstOrNull;
   }
 
   Future<void> _onRefresh() async {
@@ -90,24 +168,78 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _onFilterChanged(String text) {
-    setState(
-      () {},
+    if (text.isEmpty) {
+      setState(() {
+        _searchResults = [];
+        _searchHasMore = false;
+        _searchBeforeCursor = null;
+      });
+    } else {
+      _searchResults = [];
+      _searchHasMore = false;
+      _searchBeforeCursor = null;
+      _loadSearchPage(text);
+    }
+  }
+
+  Future<void> _loadSearchPage(String query) async {
+    if (_searchLoading || selectedGarden == null) return;
+    setState(() => _searchLoading = true);
+    final page = await ApiService().getLogs(
+      selectedGarden!,
+      before: _searchBeforeCursor,
+      limit: 30,
+      search: query.withoutDiacriticalMarks,
     );
+    if (!mounted || filterController.text != query) return;
+    if (page != null) {
+      final newDates = page.logs
+        .map((l) => '${l.dateAction.year}-${l.dateAction.month.toString().padLeft(2, '0')}-${l.dateAction.day.toString().padLeft(2, '0')}')
+        .toSet().toList(); // dédupliqué : plusieurs logs peuvent avoir la même date
+      setState(() {
+        _searchResults.addAll(page.logs);
+        _searchHasMore = page.hasMore;
+        _searchBeforeCursor = page.oldestDate;
+        _searchLoading = false;
+      });
+      await _loadMeteoForDates(newDates);
+      if (mounted) setState(() {});
+    } else {
+      setState(() => _searchLoading = false);
+    }
+  }
+
+  // Charge meteo+lune uniquement pour les dates non encore couvertes en mémoire.
+  Future<void> _loadMeteoForDates(List<String> dates) async {
+    final coveredMeteo = meteoData.map((m) =>
+        '${m.date.year}${m.date.month.toString().padLeft(2,'0')}${m.date.day.toString().padLeft(2,'0')}').toSet();
+    final coveredLune = luneData.map((l) =>
+        '${l.date.year}-${l.date.month.toString().padLeft(2,'0')}-${l.date.day.toString().padLeft(2,'0')}').toSet();
+
+    // dates reçues sont en YYYY-MM-DD
+    final missingMeteo = dates.where((d) => !coveredMeteo.contains(d.replaceAll('-', ''))).toList();
+    final missingLune  = dates.where((d) => !coveredLune.contains(d)).toList();
+
+    if (selectedGarden != null && selectedGarden!.MeteofSite.isNotEmpty && missingMeteo.isNotEmpty) {
+      final compact = missingMeteo.map((d) => d.replaceAll('-', '')).toList();
+      final newMeteo = await MeteoService().getMeteoForDates(selectedGarden!.MeteofSite, compact);
+      meteoData.addAll(newMeteo.where((m) => !coveredMeteo.contains(
+          '${m.date.year}${m.date.month.toString().padLeft(2,'0')}${m.date.day.toString().padLeft(2,'0')}')));
+    }
+
+    if (missingLune.isNotEmpty) {
+      final newLune = await MeteoService().getLuneForDates(missingLune);
+      luneData.addAll(newLune.where((l) => !coveredLune.contains(
+          '${l.date.year}-${l.date.month.toString().padLeft(2,'0')}-${l.date.day.toString().padLeft(2,'0')}')));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    List<ActionLog>? filteredActionLogs;
+    final bool isSearching = filterController.text.isNotEmpty;
+    final List<ActionLog> displayedLogs = isSearching ? _searchResults : actionLogs;
+    final bool isLoadingDisplay = isSearching ? _searchLoading : _loadingMore;
     DateTime lastDate = DateTime(1965);
-    if (filterController.text == "" || actionLogs.isEmpty) {
-      filteredActionLogs = actionLogs;
-    } else {
-      filteredActionLogs = actionLogs
-          .where((a) => a.toFilterableString().contains(
-              filterController.text.withoutDiacriticalMarks.toLowerCase()))
-          .toList();
-      filteredActionLogs.sort((a, b) => b.dateAction.compareTo(a.dateAction));
-    }
 
     return Scaffold(
       appBar: AppBar(
@@ -129,65 +261,82 @@ class _MyHomePageState extends State<MyHomePage> {
         },
         selectedIndex: currentPage,
       ),
-      body: RefreshIndicator(
-          onRefresh: _onRefresh,
-          child: currentPage == 0
-              ? Center(
-                  // Center is a layout widget. It takes a single child and positions it
-                  // in the middle of the parent.
-                  child: ListView.builder(
-                  itemCount: filteredActionLogs.length + 1,
-                  itemBuilder: (context, index) {
-                    List<Widget> results = [];
+      body: currentPage == 0
+              ? Column(
+                  children: [
+                    TopHomeFilter(
+                        jardins: jardins,
+                        filterController: filterController,
+                        onFilterChanged: _onFilterChanged,
+                        onSelectGardenTap: onSelectGardenTap),
+                    PrevisionsDuJourWidget(
+                      previsions: previsions,
+                      luneDay: _luneDuJour(),
+                    ),
+                    Expanded(
+                      child: RefreshIndicator(
+                        onRefresh: _onRefresh,
+                        child: ListView.builder(
+                          controller: _scrollController,
+                          itemCount: displayedLogs.length + 1,
+                          itemBuilder: (context, index) {
+                            // Indicateur de chargement en bas de liste
+                            if (index == displayedLogs.length) {
+                              if (isLoadingDisplay) {
+                                return const Padding(
+                                  padding: EdgeInsets.all(16),
+                                  child: Center(child: CircularProgressIndicator()),
+                                );
+                              }
+                              return const SizedBox.shrink();
+                            }
 
-                    if (index == 0) {
-                      results.add(TopHomeFilter(
-                          jardins: jardins,
-                          filterController: filterController,
-                          onFilterChanged: _onFilterChanged,
-                          onSelectGardenTap: onSelectGardenTap));
-                    } else {
-                      var a = filteredActionLogs![index - 1];
+                            List<Widget> results = [];
+                            var a = displayedLogs[index];
 
-                      if (!(lastDate.sameDayAs(a.dateAction))) {
-                        lastDate = a.dateAction;
-                        Meteo? meteo = meteoData
-                            .where((m) => m.date == a.dateAction)
-                            .firstOrNull;
-                        LuneDay? luneDay = luneData
-                            .where((l) => l.date == a.dateAction)
-                            .firstOrNull;
-                        results.add(DaySeparator(
-                            date: a.dateAction,
-                            meteo: meteo,
-                            luneDay: luneDay));
-                      }
-                      bool showDivider = (index == filteredActionLogs.length) ||
-                          (filteredActionLogs[index]
-                              .dateAction
-                              .sameDayAs(a.dateAction));
-                      results.add(Dismissible(
-                          key: Key(a.id),
-                          onDismissed: onTileDismissed(index - 1),
-                          background: Container(
-                              color: Colors.white,
-                              margin: EdgeInsets.only(bottom: 0)),
-                          child: InkWell(
-                            onTap: onTileTap(a),
-                            child: ActionListTile(
-                                actionLog: a, showDivider: showDivider),
-                          )));
-                    }
+                            if (!(lastDate.sameDayAs(a.dateAction))) {
+                              lastDate = a.dateAction;
+                              Meteo? meteo = meteoData
+                                  .where((m) => m.date == a.dateAction)
+                                  .firstOrNull;
+                              LuneDay? luneDay = luneData
+                                  .where((l) => l.date == a.dateAction)
+                                  .firstOrNull;
+                              results.add(DaySeparator(
+                                  date: a.dateAction,
+                                  meteo: meteo,
+                                  luneDay: luneDay));
+                            }
+                            bool showDivider =
+                                (index == displayedLogs.length - 1) ||
+                                    (displayedLogs[index + 1]
+                                        .dateAction
+                                        .sameDayAs(a.dateAction));
+                            results.add(Dismissible(
+                                key: Key(a.id),
+                                onDismissed: onTileDismissed(index),
+                                background: Container(
+                                    color: Colors.white,
+                                    margin: EdgeInsets.only(bottom: 0)),
+                                child: InkWell(
+                                  onTap: onTileTap(a),
+                                  child: ActionListTile(
+                                      actionLog: a, showDivider: showDivider),
+                                )));
 
-                    if (results.length > 1) {
-                      return Column(children: results);
-                    }
-                    return results.first;
-                  },
-                ))
+                            if (results.length > 1) {
+                              return Column(children: results);
+                            }
+                            return results.first;
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
+                )
               : currentPage == 1
                   ? ActionLogStats()
-                  : Container()),
+                  : Container(),
       floatingActionButton: (currentPage == 0 && selectedGarden != null)
           ? FloatingActionButton(
               onPressed: onNewActionLogTap,
@@ -235,8 +384,8 @@ class _MyHomePageState extends State<MyHomePage> {
                 )));
     if (result != null) {
       selectedGarden = result;
-      actionLogs = (await ApiService().getLogs(selectedGarden!))!;
-      await _loadMeteo(selectedGarden!);
+      await _resetAndLoadLogs(selectedGarden!);
+      await _loadPrevisions(selectedGarden!);
     }
     setState(() {});
   }

@@ -8,6 +8,36 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// GetLuneForDates retourne le jour biodynamique pour une liste précise de dates.
+// Body JSON : {"dates": ["2025-08-16", "2024-03-05"]}
+func GetLuneForDates(c *gin.Context) {
+	var body struct {
+		Dates []string `json:"dates"`
+	}
+	if err := c.BindJSON(&body); err != nil || len(body.Dates) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "body JSON invalide : {\"dates\": [\"YYYY-MM-DD\", ...]}"})
+		return
+	}
+
+	type luneDay struct {
+		Date             string `json:"date"`
+		JourBiodynamique string `json:"jour_biodynamique"`
+		SigneZodiaque    string `json:"signe_zodiaque"`
+	}
+
+	result := make([]luneDay, 0, len(body.Dates))
+	for _, ds := range body.Dates {
+		d, err := time.Parse("2006-01-02", ds)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "format invalide, utiliser YYYY-MM-DD : " + ds})
+			return
+		}
+		jourBio, signe := models.JourBiodynamique(d)
+		result = append(result, luneDay{Date: ds, JourBiodynamique: jourBio, SigneZodiaque: signe})
+	}
+	c.JSON(http.StatusOK, result)
+}
+
 // GetLuneRange retourne le jour biodynamique pour chaque jour d'une plage de dates.
 // Paramètres : date_deb, date_fin (YYYY-MM-DD)
 func GetLuneRange(c *gin.Context) {

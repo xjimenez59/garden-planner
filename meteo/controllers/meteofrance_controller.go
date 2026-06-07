@@ -4,6 +4,7 @@ import (
 	"context"
 	"garden-planner/meteo/models"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -30,6 +31,37 @@ func MF_GetMeteo(c *gin.Context) {
 		return
 	}
 
+	c.JSON(http.StatusOK, rows)
+}
+
+// MF_GetMeteoForDates retourne les données météo pour une liste précise de dates.
+// Body JSON : {"station": "56243001", "dates": ["20250816", "20240305"]}
+// Les dates sont au format YYYYMMDD (identique à la colonne 'date' de la table).
+func MF_GetMeteoForDates(c *gin.Context) {
+	var body struct {
+		Station string   `json:"station"`
+		Dates   []string `json:"dates"`
+	}
+	if err := c.BindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "body JSON invalide"})
+		return
+	}
+	if body.Station == "" || len(body.Dates) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "station et dates requis"})
+		return
+	}
+	// Sanitize : s'assurer que les dates ne contiennent que des chiffres
+	for _, d := range body.Dates {
+		if strings.ContainsAny(d, " '\";-") {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "format de date invalide"})
+			return
+		}
+	}
+	rows, err := models.GetMeteoQuotidienForDates(context.Background(), body.Station, body.Dates)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 	c.JSON(http.StatusOK, rows)
 }
 

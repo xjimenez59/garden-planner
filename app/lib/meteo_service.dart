@@ -153,4 +153,95 @@ class MeteoService {
     }
     return [];
   }
+
+  /// Retourne les relevés météo pour une liste précise de dates.
+  /// [dates] au format YYYYMMDD (ex: ["20250816", "20240305"]).
+  Future<List<Meteo>> getMeteoForDates(String site, List<String> dates) async {
+    if (dates.isEmpty) return [];
+    try {
+      final url = Uri.parse('$_meteoBaseUrl/meteo/dates');
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'station': site, 'dates': dates}),
+      );
+      if (response.statusCode == 200) {
+        return _meteoListFromJson(response.body);
+      }
+      log('MeteoService.getMeteoForDates: HTTP ${response.statusCode}');
+    } catch (e) {
+      log('MeteoService.getMeteoForDates: $e');
+    }
+    return [];
+  }
+
+  /// Retourne le jour biodynamique pour une liste précise de dates (YYYY-MM-DD).
+  Future<List<LuneDay>> getLuneForDates(List<String> dates) async {
+    if (dates.isEmpty) return [];
+    try {
+      final url = Uri.parse('$_meteoBaseUrl/lune/dates');
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'dates': dates}),
+      );
+      if (response.statusCode == 200) {
+        return (jsonDecode(response.body) as List)
+            .map((e) => LuneDay.fromJson(e))
+            .toList();
+      }
+      log('MeteoService.getLuneForDates: HTTP ${response.statusCode}');
+    } catch (e) {
+      log('MeteoService.getLuneForDates: $e');
+    }
+    return [];
+  }
+
+  /// Retourne les prévisions horaires (créneaux de 3h) pour la journée en cours.
+  /// [station] est le code station MétéoFrance (ex: "56243001").
+  Future<List<HourlyForecast>> getPrevisions(String station) async {
+    try {
+      final url = Uri.parse('$_meteoBaseUrl/previsions')
+          .replace(queryParameters: {'station': station});
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        return (jsonDecode(response.body) as List)
+            .map((e) => HourlyForecast.fromJson(e))
+            .toList();
+      }
+      log('MeteoService.getPrevisions: HTTP ${response.statusCode}');
+    } catch (e) {
+      log('MeteoService.getPrevisions: $e');
+    }
+    return [];
+  }
+}
+
+class HourlyForecast {
+  final String time;       // "2026-06-05T06:00"
+  final double temperature;
+  final double precipitation;
+  final double windSpeed;
+  final int windDir;       // degrés 0-360
+  final int weatherCode;   // WMO code
+
+  HourlyForecast({
+    required this.time,
+    required this.temperature,
+    required this.precipitation,
+    required this.windSpeed,
+    required this.windDir,
+    required this.weatherCode,
+  });
+
+  factory HourlyForecast.fromJson(Map<String, dynamic> j) => HourlyForecast(
+        time: j['time'] as String,
+        temperature: (j['temperature'] as num).toDouble(),
+        precipitation: (j['precipitation'] as num).toDouble(),
+        windSpeed: (j['wind_speed'] as num).toDouble(),
+        windDir: (j['wind_dir'] as num).toInt(),
+        weatherCode: (j['weather_code'] as num).toInt(),
+      );
+
+  String get heure => time.length >= 16 ? time.substring(11, 16) : time;
 }

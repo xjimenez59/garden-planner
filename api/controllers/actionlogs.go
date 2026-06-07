@@ -6,6 +6,7 @@ import (
 	"garden-planner/api/dto"
 	"garden-planner/api/models"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -13,17 +14,25 @@ import (
 
 func GetLogs(c *gin.Context) {
 	jardinId := c.Param("gardenId")
+	before := c.Query("before")
+	search := c.Query("search")
+	limit := 100
+	if l := c.Query("limit"); l != "" {
+		if v, err := strconv.Atoi(l); err == nil && v > 0 {
+			limit = v
+		}
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	actionLogs, err := models.GetLogs(ctx, jardinId)
+	page, err := models.GetLogs(ctx, jardinId, before, limit, search)
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, actionLogs)
+	c.IndentedJSON(http.StatusOK, page)
 }
 
 func PostLog(c *gin.Context) {

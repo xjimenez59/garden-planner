@@ -27,18 +27,21 @@ class ApiService {
     };
   }
 
-  Future<List<ActionLog>?> getLogs(Garden jardin) async {
+  Future<LogsPage?> getLogs(Garden jardin, {String? before, int limit = 100, String? search}) async {
     try {
-      var url = Uri.parse("${ApiConstants.baseUrl}/garden/${jardin.ID}/logs");
+      final params = {'limit': limit.toString()};
+      if (before != null) params['before'] = before;
+      if (search != null && search.isNotEmpty) params['search'] = search;
+      var url = Uri.parse("${ApiConstants.baseUrl}/garden/${jardin.ID}/logs")
+          .replace(queryParameters: params);
       var response = await http.get(url);
       if (response.statusCode == 200) {
-        List<ActionLog> model = actionLogFromJson(response.body);
-        return model;
+        return LogsPage.fromJson(jsonDecode(response.body));
       }
     } catch (e) {
       log(e.toString());
     }
-    return [];
+    return null;
   }
 
   Future<List<Garden>?> getGardens() async {

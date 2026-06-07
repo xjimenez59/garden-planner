@@ -193,7 +193,6 @@ class TopHomeFilter extends StatelessWidget {
       margin: EdgeInsets.all(0),
       padding: EdgeInsets.all(0),
       width: MediaQuery.of(context).size.width,
-      height: 100,
       decoration: BoxDecoration(
         color: Color(0x1f000000),
         shape: BoxShape.rectangle,

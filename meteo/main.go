@@ -1,6 +1,8 @@
 package main
 
 import (
+	_ "time/tzdata" // embarque la base de fuseaux horaires (nécessaire dans les conteneurs sans tzdata)
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
@@ -37,6 +39,9 @@ func main() {
 
 	router.GET("/lune", controllers.GetLune)
 	router.GET("/lune/range", controllers.GetLuneRange)
+	router.POST("/lune/dates", controllers.GetLuneForDates)
+	router.GET("/previsions", controllers.GetPrevisions)
+	router.POST("/meteo/dates", controllers.MF_GetMeteoForDates)
 
 	router.Run("0.0.0.0:8082")
 
