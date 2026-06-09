@@ -8,7 +8,6 @@ import 'package:app/action_log.dart';
 import 'package:app/garden_model.dart';
 import 'package:app/gardens_view.dart';
 import 'package:app/meteo_service.dart';
-import 'package:app/previsions_view.dart';
 import 'package:app/stats_view.dart';
 import 'package:flutter/material.dart';
 import 'package:app/logs_view.dart';
@@ -42,6 +41,7 @@ class _MyHomePageState extends State<MyHomePage> {
   List<HourlyForecast> previsions = [];
   TextEditingController filterController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  bool _showToTopButton = false;
   bool _hasMore = true;
   bool _loadingMore = false;
   String? _beforeCursor;
@@ -69,6 +69,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _onScroll() {
     final pos = _scrollController.position;
+    final showBtn = pos.pixels > 400;
+    if (showBtn != _showToTopButton) setState(() => _showToTopButton = showBtn);
     if (pos.pixels <= pos.maxScrollExtent * 0.66) return;
     if (filterController.text.isNotEmpty) {
       if (_searchHasMore && !_searchLoading) _loadSearchPage(filterController.text);
@@ -155,15 +157,17 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> _loadPrevisions(Garden garden) async {
     if (garden.MeteofSite.isEmpty) return;
     previsions = await MeteoService().getPrevisions(garden.MeteofSite);
-  }
-
-  LuneDay? _luneDuJour() {
+    // Charger le lune pour toute la période de prévision (aujourd'hui + 6 j)
     final today = DateTime.now();
-    final d = DateTime(today.year, today.month, today.day);
-    return luneData.where((l) => l.date == d).firstOrNull;
+    String fmt(DateTime d) =>
+        '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+    final newLune = await MeteoService()
+        .getLuneRange(fmt(today), fmt(today.add(Duration(days: 6))));
+    final existingDates = luneData.map((l) => l.date).toSet();
+    luneData.addAll(newLune.where((l) => !existingDates.contains(l.date)));
   }
 
-  Future<void> _onRefresh() async {
+Future<void> _onRefresh() async {
     _getData();
   }
 
@@ -240,6 +244,14 @@ class _MyHomePageState extends State<MyHomePage> {
     final List<ActionLog> displayedLogs = isSearching ? _searchResults : actionLogs;
     final bool isLoadingDisplay = isSearching ? _searchLoading : _loadingMore;
     DateTime lastDate = DateTime(1965);
+    int lastYear = DateTime.now().year;
+
+    // Insérer un en-tête "Aujourd'hui" si aucun log n'existe pour la date du jour
+    final todayMidnight = DateTime.now();
+    final todayDate = DateTime(todayMidnight.year, todayMidnight.month, todayMidnight.day);
+    final bool needsTodayHeader = !isSearching &&
+        (displayedLogs.isEmpty || !displayedLogs[0].dateAction.sameDayAs(todayDate));
+    final int offset = needsTodayHeader ? 1 : 0;
 
     return Scaffold(
       appBar: AppBar(
@@ -269,19 +281,29 @@ class _MyHomePageState extends State<MyHomePage> {
                         filterController: filterController,
                         onFilterChanged: _onFilterChanged,
                         onSelectGardenTap: onSelectGardenTap),
-                    PrevisionsDuJourWidget(
-                      previsions: previsions,
-                      luneDay: _luneDuJour(),
-                    ),
                     Expanded(
-                      child: RefreshIndicator(
+                      child: Stack(
+                        children: [
+                      RefreshIndicator(
                         onRefresh: _onRefresh,
                         child: ListView.builder(
                           controller: _scrollController,
-                          itemCount: displayedLogs.length + 1,
+                          itemCount: displayedLogs.length + 1 + offset,
                           itemBuilder: (context, index) {
+                            // En-tête "Aujourd'hui" synthétique (aucun log ce jour)
+                            if (needsTodayHeader && index == 0) {
+                              return DaySeparator(
+                                date: todayDate,
+                                luneDay: luneData
+                                    .where((l) => l.date == todayDate)
+                                    .firstOrNull,
+                                previsions: previsions,
+                                luneData: luneData,
+                              );
+                            }
+                            final logIndex = index - offset;
                             // Indicateur de chargement en bas de liste
-                            if (index == displayedLogs.length) {
+                            if (logIndex == displayedLogs.length) {
                               if (isLoadingDisplay) {
                                 return const Padding(
                                   padding: EdgeInsets.all(16),
@@ -292,29 +314,36 @@ class _MyHomePageState extends State<MyHomePage> {
                             }
 
                             List<Widget> results = [];
-                            var a = displayedLogs[index];
+                            var a = displayedLogs[logIndex];
 
                             if (!(lastDate.sameDayAs(a.dateAction))) {
                               lastDate = a.dateAction;
+                              if (a.dateAction.year != lastYear) {
+                                lastYear = a.dateAction.year;
+                                results.add(YearSeparator(year: lastYear));
+                              }
                               Meteo? meteo = meteoData
                                   .where((m) => m.date == a.dateAction)
                                   .firstOrNull;
                               LuneDay? luneDay = luneData
                                   .where((l) => l.date == a.dateAction)
                                   .firstOrNull;
+                              final isToday = a.dateAction.sameDayAs(DateTime.now());
                               results.add(DaySeparator(
                                   date: a.dateAction,
                                   meteo: meteo,
-                                  luneDay: luneDay));
+                                  luneDay: luneDay,
+                                  previsions: isToday ? previsions : null,
+                                  luneData: isToday ? luneData : null));
                             }
                             bool showDivider =
-                                (index == displayedLogs.length - 1) ||
-                                    (displayedLogs[index + 1]
+                                (logIndex == displayedLogs.length - 1) ||
+                                    (displayedLogs[logIndex + 1]
                                         .dateAction
                                         .sameDayAs(a.dateAction));
                             results.add(Dismissible(
                                 key: Key(a.id),
-                                onDismissed: onTileDismissed(index),
+                                onDismissed: onTileDismissed(logIndex),
                                 background: Container(
                                     color: Colors.white,
                                     margin: EdgeInsets.only(bottom: 0)),
@@ -331,6 +360,8 @@ class _MyHomePageState extends State<MyHomePage> {
                           },
                         ),
                       ),
+                        ],
+                      ),
                     ),
                   ],
                 )
@@ -338,10 +369,29 @@ class _MyHomePageState extends State<MyHomePage> {
                   ? ActionLogStats()
                   : Container(),
       floatingActionButton: (currentPage == 0 && selectedGarden != null)
-          ? FloatingActionButton(
-              onPressed: onNewActionLogTap,
-              tooltip: 'Ajouter une action',
-              child: const Icon(Icons.add),
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_showToTopButton) ...[
+                  FloatingActionButton(
+                    heroTag: 'toTop',
+                    tooltip: "Aujourd'hui",
+                    onPressed: () => _scrollController.animateTo(
+                      0,
+                      duration: Duration(milliseconds: 400),
+                      curve: Curves.easeOut,
+                    ),
+                    child: Icon(Icons.vertical_align_top),
+                  ),
+                  SizedBox(height: 8),
+                ],
+                FloatingActionButton(
+                  heroTag: 'add',
+                  onPressed: onNewActionLogTap,
+                  tooltip: 'Ajouter une action',
+                  child: const Icon(Icons.add),
+                ),
+              ],
             )
           : null,
     );

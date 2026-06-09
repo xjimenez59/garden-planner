@@ -65,7 +65,7 @@ class Meteo {
     double? nd(String key) {
       final v = j[key];
       if (v == null || v == '') return null;
-      return double.tryParse(v as String);
+      return double.tryParse((v as String).replaceAll(',', '.'));
     }
 
     return Meteo(

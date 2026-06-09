@@ -3,8 +3,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:app/meteo_service.dart';
 
-// Mapping WMO weathercode → icône Material
-IconData _wmoIcon(int code) {
+// Mapping WMO weathercode → icône Material (public pour logs_view)
+IconData wmoIconData(int code) {
   if (code == 0) return Icons.wb_sunny;
   if (code <= 3) return Icons.cloud_queue;
   if (code <= 48) return Icons.foggy;
@@ -21,9 +21,8 @@ Color _tempColor(double t) {
   return Colors.orange.shade700;
 }
 
-// Flèche de direction du vent (0° = Nord, 90° = Est, etc.)
 Widget _windArrow(int degrees, double speed) {
-  final rad = (degrees - 180) * pi / 180; // pointe dans la direction d'où vient le vent
+  final rad = (degrees - 180) * pi / 180;
   return Row(
     mainAxisSize: MainAxisSize.min,
     children: [
@@ -38,190 +37,256 @@ Widget _windArrow(int degrees, double speed) {
   );
 }
 
-// Un créneau de 3h dans la frise
-Widget _slot(HourlyForecast f, double maxPrecip) {
-  final barMaxH = 24.0;
-  final barH = maxPrecip > 0 ? (f.precipitation / maxPrecip * barMaxH).clamp(2.0, barMaxH) : 0.0;
+const double _slotW = 64.0;
+
+const _joursSemaine = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+
+String _labelJour(String dateStr) {
+  final d = DateTime.parse(dateStr);
+  return '${_joursSemaine[d.weekday - 1]}. ${d.day}';
+}
+
+List<MapEntry<String, List<HourlyForecast>>> _groupByDay(
+    List<HourlyForecast> forecasts) {
+  final map = <String, List<HourlyForecast>>{};
+  for (final f in forecasts) {
+    final key = f.time.length >= 10 ? f.time.substring(0, 10) : f.time;
+    map.putIfAbsent(key, () => []).add(f);
+  }
+  return map.entries.toList();
+}
+
+String _luneEmoji(LuneDay? lune) {
+  switch (lune?.jourBiodynamique) {
+    case 'jour_fruit':   return '🍓';
+    case 'jour_racine':  return '🥕';
+    case 'jour_fleur':   return '🌸';
+    case 'jour_feuille': return '🌿';
+    default: return '🌙';
+  }
+}
+
+Widget _slotHeader(HourlyForecast f) {
+  return SizedBox(
+    width: _slotW,
+    child: Padding(
+      padding: EdgeInsets.symmetric(horizontal: 4).copyWith(top: 4),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(f.heure,
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+          SizedBox(height: 3),
+          Text('${f.temperature.round()}°',
+              style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: _tempColor(f.temperature))),
+          SizedBox(height: 3),
+          Icon(wmoIconData(f.weatherCode),
+              size: 20, color: Colors.blueGrey.shade600),
+          SizedBox(height: 3),
+        ],
+      ),
+    ),
+  );
+}
+
+Widget _slotFooter(HourlyForecast f) {
+  return SizedBox(
+    width: _slotW,
+    child: Padding(
+      padding: EdgeInsets.symmetric(horizontal: 4).copyWith(bottom: 6),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(height: 4),
+          _windArrow(f.windDir, f.windSpeed),
+        ],
+      ),
+    ),
+  );
+}
+
+class _PrecipAreaPainter extends CustomPainter {
+  final List<double> values;
+
+  _PrecipAreaPainter({required this.values});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final n = values.length;
+    if (n == 0) return;
+
+    final maxVal = values.reduce(max);
+
+    const topMargin = 6.0;
+    double yFor(double v) {
+      if (maxVal == 0) return size.height;
+      return size.height - (v / maxVal * (size.height - topMargin));
+    }
+
+    double xFor(int i) => _slotW * i + _slotW / 2;
+
+    final fillPath = Path();
+    final strokePath = Path();
+
+    fillPath.moveTo(xFor(0), size.height);
+    fillPath.lineTo(xFor(0), yFor(values[0]));
+    strokePath.moveTo(xFor(0), yFor(values[0]));
+
+    for (int i = 0; i < n - 1; i++) {
+      final x0 = xFor(i);
+      final y0 = yFor(values[i]);
+      final x1 = xFor(i + 1);
+      final y1 = yFor(values[i + 1]);
+      final cp1x = x0 + (x1 - x0) * 0.4;
+      final cp2x = x1 - (x1 - x0) * 0.4;
+      fillPath.cubicTo(cp1x, y0, cp2x, y1, x1, y1);
+      strokePath.cubicTo(cp1x, y0, cp2x, y1, x1, y1);
+    }
+
+    fillPath.lineTo(xFor(n - 1), size.height);
+    fillPath.close();
+
+    canvas.drawPath(
+      fillPath,
+      Paint()
+        ..color = Colors.blue.shade200.withValues(alpha: 0.55)
+        ..style = PaintingStyle.fill,
+    );
+    canvas.drawPath(
+      strokePath,
+      Paint()
+        ..color = Colors.blue.shade400
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round,
+    );
+
+    if (maxVal > 0) {
+      final peakIdx = values.indexWhere((v) => v == maxVal);
+      final px = xFor(peakIdx);
+      final py = yFor(maxVal);
+      final label = maxVal >= 1
+          ? '${maxVal.round()}mm'
+          : '${maxVal.toStringAsFixed(1)}mm';
+      final tp = TextPainter(
+        text: TextSpan(
+          text: label,
+          style: TextStyle(
+              fontSize: 9,
+              color: Colors.blue.shade700,
+              fontWeight: FontWeight.w600),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      tp.paint(
+        canvas,
+        Offset(
+          (px - tp.width / 2).clamp(2, size.width - tp.width - 2),
+          (py - tp.height - 2).clamp(0, size.height - tp.height),
+        ),
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_PrecipAreaPainter old) => old.values != values;
+}
+
+Widget _buildDaySection(
+    String dateStr, List<HourlyForecast> slots, bool isToday, LuneDay? lune) {
+  final dayWidth = _slotW * slots.length;
+  final label = isToday
+      ? 'Aujourd\'hui ${DateTime.parse(dateStr).day}'
+      : _labelJour(dateStr);
 
   return Container(
-    width: 64,
-    padding: EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+    decoration: BoxDecoration(
+      color: isToday ? Color(0xFFE8F0F8) : null,
+      border: Border(right: BorderSide(color: Colors.grey.shade300, width: 1)),
+    ),
     child: Column(
-      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Heure
-        Text(f.heure,
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-        SizedBox(height: 4),
-        // Icône météo
-        Icon(_wmoIcon(f.weatherCode), size: 20, color: Colors.blueGrey.shade600),
-        SizedBox(height: 4),
-        // Température
-        Text('${f.temperature.round()}°',
-            style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: _tempColor(f.temperature))),
-        SizedBox(height: 4),
-        // Barre de précipitations
         Container(
-          height: barMaxH,
-          alignment: Alignment.bottomCenter,
-          child: Container(
-            width: 12,
-            height: f.precipitation > 0 ? barH : 2,
-            decoration: BoxDecoration(
-              color: f.precipitation > 0
-                  ? Colors.blue.shade300
-                  : Colors.grey.shade200,
-              borderRadius: BorderRadius.circular(2),
-            ),
+          width: dayWidth,
+          padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+          decoration: BoxDecoration(
+            border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(_luneEmoji(lune), style: TextStyle(fontSize: 12)),
+              SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: isToday ? FontWeight.bold : FontWeight.w500,
+                  color: isToday ? Colors.blue.shade700 : Colors.grey.shade600,
+                ),
+              ),
+            ],
           ),
         ),
-        SizedBox(height: 2),
-        // Valeur précip
-        Text(
-          f.precipitation > 0 ? '${f.precipitation.toStringAsFixed(1)}mm' : '-',
-          style: TextStyle(fontSize: 9, color: Colors.blue.shade400),
+        Row(children: slots.map(_slotHeader).toList()),
+        SizedBox(
+          height: 40,
+          width: dayWidth,
+          child: CustomPaint(
+            painter: _PrecipAreaPainter(
+                values: slots.map((f) => f.precipitation).toList()),
+          ),
         ),
-        SizedBox(height: 4),
-        // Vent
-        _windArrow(f.windDir, f.windSpeed),
+        Row(children: slots.map(_slotFooter).toList()),
       ],
     ),
   );
 }
 
-class PrevisionsDuJourWidget extends StatefulWidget {
+/// Frise scrollable des prévisions multi-jours (vue dépliée uniquement).
+/// Utilisée dans DaySeparator pour le séparateur "Aujourd'hui".
+class PrevisionsFriseWidget extends StatelessWidget {
   final List<HourlyForecast> previsions;
-  final LuneDay? luneDay;
+  final List<LuneDay> luneData;
 
-  const PrevisionsDuJourWidget({
+  const PrevisionsFriseWidget({
     super.key,
     required this.previsions,
-    this.luneDay,
+    this.luneData = const [],
   });
 
-  @override
-  State<PrevisionsDuJourWidget> createState() => _PrevisionsDuJourWidgetState();
-}
-
-class _PrevisionsDuJourWidgetState extends State<PrevisionsDuJourWidget> {
-  bool _expanded = false;
-
-  String _bioemoji() {
-    switch (widget.luneDay?.jourBiodynamique) {
-      case 'jour_fruit':   return '🍓';
-      case 'jour_racine':  return '🥕';
-      case 'jour_fleur':   return '🌸';
-      case 'jour_feuille': return '🌿';
-      default: return '🌙';
-    }
-  }
-
-  String _biolabel() {
-    final raw = widget.luneDay?.jourBiodynamique ?? '';
-    if (raw.isEmpty) return '';
-    final label = raw.replaceFirst('jour_', '');
-    return label[0].toUpperCase() + label.substring(1);
+  LuneDay? _luneForDate(String dateStr) {
+    final d = DateTime.parse(dateStr);
+    return luneData
+        .where((l) =>
+            l.date.year == d.year &&
+            l.date.month == d.month &&
+            l.date.day == d.day)
+        .firstOrNull;
   }
 
   @override
   Widget build(BuildContext context) {
-    if (widget.previsions.isEmpty) return SizedBox.shrink();
-
-    final temps = widget.previsions.map((f) => f.temperature).toList();
-    final tmin = temps.reduce(min);
-    final tmax = temps.reduce(max);
-    final totalPrecip = widget.previsions.fold(0.0, (s, f) => s + f.precipitation);
-    final avgWind = widget.previsions.fold(0.0, (s, f) => s + f.windSpeed) /
-        widget.previsions.length;
-    final maxPrecip = widget.previsions.fold(0.0, (s, f) => s > f.precipitation ? s : f.precipitation);
-
-    // Direction de vent dominante (slot de midi ou milieu de journée)
-    final midIdx = widget.previsions.length ~/ 2;
-    final dominantWindDir = widget.previsions[midIdx].windDir;
-
-    return GestureDetector(
-      onTap: () => setState(() => _expanded = !_expanded),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Color(0xFFF0F4F8),
-          border: Border(bottom: BorderSide(color: Color(0x4d9e9e9e))),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // --- Ligne collapsed ---
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              child: Row(
-                children: [
-                  // Biodynamique
-                  Text(_bioemoji(), style: TextStyle(fontSize: 16)),
-                  SizedBox(width: 4),
-                  Text(_biolabel(),
-                      style: TextStyle(
-                          fontSize: 12, color: Colors.grey.shade700)),
-                  Spacer(),
-                  // Températures
-                  Icon(Icons.arrow_upward, size: 12, color: Colors.orange),
-                  Text('${tmax.round()}°',
-                      style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.orange.shade700)),
-                  SizedBox(width: 6),
-                  Icon(Icons.arrow_downward, size: 12, color: Colors.blue),
-                  Text('${tmin.round()}°',
-                      style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.blue.shade600)),
-                  SizedBox(width: 10),
-                  // Précipitations
-                  Icon(Icons.water_drop, size: 14, color: Colors.blue.shade400),
-                  Text(
-                    totalPrecip > 0
-                        ? ' ${totalPrecip.toStringAsFixed(1)}mm'
-                        : ' 0mm',
-                    style: TextStyle(fontSize: 12, color: Colors.blue.shade600),
-                  ),
-                  SizedBox(width: 10),
-                  // Vent
-                  Transform.rotate(
-                    angle: (dominantWindDir - 180) * pi / 180,
-                    child: Icon(Icons.arrow_upward,
-                        size: 14, color: Colors.blueGrey),
-                  ),
-                  Text(' ${avgWind.round()}km/h',
-                      style: TextStyle(
-                          fontSize: 12, color: Colors.blueGrey.shade700)),
-                  SizedBox(width: 8),
-                  Icon(
-                    _expanded
-                        ? Icons.keyboard_arrow_up
-                        : Icons.keyboard_arrow_down,
-                    size: 18,
-                    color: Colors.grey,
-                  ),
-                ],
-              ),
-            ),
-
-            // --- Frise expanded ---
-            if (_expanded)
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: EdgeInsets.only(bottom: 6),
-                child: Row(
-                  children: widget.previsions
-                      .map((f) => _slot(f, maxPrecip))
-                      .toList(),
-                ),
-              ),
-          ],
-        ),
+    final days = _groupByDay(previsions);
+    final todayStr = DateTime.now().toIso8601String().substring(0, 10);
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: days
+            .map((e) => _buildDaySection(
+                  e.key,
+                  e.value,
+                  e.key == todayStr,
+                  _luneForDate(e.key),
+                ))
+            .toList(),
       ),
     );
   }

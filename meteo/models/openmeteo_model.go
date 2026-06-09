@@ -137,7 +137,7 @@ func GetPrevisions(lat, lon float64) ([]HourlyForecast, error) {
 	url := fmt.Sprintf(
 		"https://api.open-meteo.com/v1/meteofrance?latitude=%.4f&longitude=%.4f"+
 			"&hourly=temperature_2m,precipitation,windspeed_10m,winddirection_10m,weathercode"+
-			"&forecast_days=2&timezone=Europe%%2FParis",
+			"&forecast_days=7&timezone=Europe%%2FParis",
 		lat, lon,
 	)
 
@@ -157,19 +157,15 @@ func GetPrevisions(lat, lon float64) ([]HourlyForecast, error) {
 		return nil, fmt.Errorf("open-meteo parse: %w", err)
 	}
 
-	paris, _ := time.LoadLocation("Europe/Paris")
-	today := time.Now().In(paris).Format("2006-01-02")
 	result := make([]HourlyForecast, 0)
 
 	for i, t := range raw.Hourly.Time {
-		if len(t) < 10 || t[:10] != today {
+		if len(t) < 16 {
 			continue
 		}
 		// Garder uniquement les créneaux de 3h (0, 3, 6, 9, 12, 15, 18, 21)
 		hour := 0
-		if len(t) >= 16 {
-			fmt.Sscanf(t[11:13], "%d", &hour)
-		}
+		fmt.Sscanf(t[11:13], "%d", &hour)
 		if hour%3 != 0 {
 			continue
 		}
