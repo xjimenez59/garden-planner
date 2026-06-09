@@ -182,6 +182,7 @@ class _DaySeparatorState extends State<DaySeparator> {
       onTap: _isToday ? () => setState(() => _expanded = !_expanded) : null,
       child: Container(
         margin: EdgeInsets.fromLTRB(0, _isToday ? 0 : 10, 0, 0),
+        constraints: _isToday ? BoxConstraints(minHeight: 48) : null,
         decoration: BoxDecoration(
           color: _isToday ? Color(0xFFE8F0F8) : Color(0x12000000),
           border: Border.all(color: Color(0x4d9e9e9e), width: 1),
@@ -312,6 +313,7 @@ class TopHomeFilter extends StatelessWidget {
               onChanged: onFilterChanged,
               decoration: InputDecoration(
                 isDense: true,
+                contentPadding: EdgeInsets.symmetric(vertical: 12),
                 prefixIcon: Icon(Icons.search, size: 20),
                 hintText: 'Rechercher...',
                 border: InputBorder.none,
@@ -367,118 +369,108 @@ class ActionListTile extends StatelessWidget {
   const ActionListTile(
       {super.key, required this.actionLog, this.showDivider = true});
 
+  Widget _tagBadges(List<String> tags) => Wrap(
+        spacing: 4,
+        runSpacing: 4,
+        children: tags
+            .map((t) => Container(
+                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: Colors.blue.shade200, width: 0.5),
+                  ),
+                  child: Text(t,
+                      style: TextStyle(
+                          fontSize: 11, color: Colors.blue.shade800)),
+                ))
+            .toList(),
+      );
+
   @override
   Widget build(BuildContext context) {
-    var lignes = [
-      Align(
-        alignment: Alignment.centerLeft,
-        child: Text(
-          "${actionLog.variete}${actionLog.lieu == "" ? "" : ' / ${actionLog.lieu}'}",
-          textAlign: TextAlign.left,
-          overflow: TextOverflow.clip,
-          style: TextStyle(
-            fontWeight: FontWeight.w400,
-            fontStyle: FontStyle.normal,
-            fontSize: 12,
-            color: Color(0xff000000),
-          ),
-        ),
-      )
-    ];
-
-    if (actionLog.notes != "") {
-      lignes.add(Align(
-        alignment: Alignment.centerLeft,
-        child: Text(
-          actionLog.notes,
-          textAlign: TextAlign.start,
-          overflow: TextOverflow.clip,
-          style: TextStyle(
-            fontWeight: FontWeight.w400,
-            fontStyle: FontStyle.normal,
-            fontSize: 12,
-            color: Color(0xff000000),
-          ),
-        ),
-      ));
-    }
-
-    Widget? tagLine;
-    if (actionLog.tags.isNotEmpty) {
-      final chips = actionLog.tags.map((s) {
-        return Chip(
-          elevation: 0,
-          shadowColor: Colors.teal,
-          label: Text(s, style: TextStyle(color: Colors.blue[900])),
-        );
-      }).toList();
-      tagLine = Padding(
-          padding: const EdgeInsets.only(left: 10, right: 10),
-          child: Align(
-              alignment: Alignment.topRight,
-              child: Wrap(spacing: 5, runSpacing: 5, children: chips)));
-    }
-
-    var tile = Column(
-      mainAxisAlignment: MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      mainAxisSize: MainAxisSize.max,
+    final a = actionLog;
+    final qteLabel = a.poids > 0
+        ? ' (${a.poids}g)'
+        : a.qte > 0
+            ? ' (${a.qte})'
+            : '';
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: EdgeInsets.fromLTRB(10, 0, 0, 0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisSize: MainAxisSize.max,
-            children: [
-              Expanded(
-                flex: 1,
-                child: Text(
-                  "${actionLog.action} - ${actionLog.legume} "
-                  "${actionLog.poids > 0 ? '(${actionLog.poids}g)' : actionLog.qte > 0 ? '(${actionLog.qte})' : ''}",
-                  textAlign: TextAlign.start,
-                  overflow: TextOverflow.clip,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w400,
-                    fontStyle: FontStyle.normal,
-                    fontSize: 14,
-                    color: Color(0xff000000),
+        // Zone de contenu avec hauteur minimale 48px, contenu centré verticalement
+        ConstrainedBox(
+          constraints: BoxConstraints(minHeight: 48),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Ligne 1 : action - légume  +  lieu à droite
+                Padding(
+                  padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${a.action} - ${a.legume}$qteLabel',
+                          overflow: TextOverflow.clip,
+                          style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black87),
+                        ),
+                      ),
+                      if (a.lieu.isNotEmpty) ...[
+                        SizedBox(width: 8),
+                        Text(a.lieu,
+                            style: TextStyle(
+                                fontSize: 12, color: Colors.grey.shade600)),
+                      ],
+                    ],
                   ),
                 ),
-              ),
-            ],
+                // Ligne 2 : variété + tags en trailing (si l'un ou l'autre présent)
+                if (a.variete.isNotEmpty || a.tags.isNotEmpty)
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(10, 1, 10, 0),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: Text(a.variete,
+                              overflow: TextOverflow.clip,
+                              style: TextStyle(
+                                  fontSize: 12, color: Colors.grey.shade600)),
+                        ),
+                        if (a.tags.isNotEmpty) _tagBadges(a.tags),
+                      ],
+                    ),
+                  ),
+                // Ligne 3 : notes (si présentes)
+                if (a.notes.isNotEmpty)
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(10, 2, 10, 0),
+                    child: Text(a.notes,
+                        overflow: TextOverflow.clip,
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontStyle: FontStyle.italic,
+                            color: Colors.grey.shade500)),
+                  ),
+              ],
+            ),
           ),
         ),
-        Padding(
-          padding: EdgeInsets.fromLTRB(10, 0, 0, 0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisSize: MainAxisSize.max,
-            children: [
-              Expanded(
-                flex: 1,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.max,
-                  children: lignes,
-                ),
-              ),
-            ],
-          ),
-        ),
+        // Photos et divider hors de la zone contrainte
+        if (a.photos.isNotEmpty)
+          HorizontalImageListview(imgUrlList: a.photos),
+        if (showDivider)
+          Divider(color: Color(0xff808080), height: 1),
       ],
     );
-
-    if (tagLine != null) tile.children.add(tagLine);
-    if (actionLog.photos.isNotEmpty) {
-      tile.children.add(HorizontalImageListview(imgUrlList: actionLog.photos));
-    }
-    if (showDivider) {
-      tile.children.add(Divider(color: Color(0xff808080), height: 1));
-    }
-
-    return tile;
   }
 }
