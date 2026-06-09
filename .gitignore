@@ -17,3 +17,4 @@ meteo/cmd/migrate/meteo-migrate.exe
 meteo/cmd/migrate/meteo.db
 export-images.ps1
 data/
+!api/data/

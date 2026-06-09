@@ -9,6 +9,7 @@ import 'package:flutter_guid/flutter_guid.dart';
 import 'package:http/http.dart' as http;
 import 'constants.dart';
 import 'action_log.dart';
+import 'cleanup_model.dart';
 import 'legumes_model.dart';
 
 //import 'package:firebase_auth/firebase_auth.dart';
@@ -214,12 +215,71 @@ class ApiService {
           Uri.parse("${ApiConstants.baseUrl}${ApiConstants.photoEndPoint}/$id");
       var response = await http.delete(url);
       if (response.statusCode == 200) {
-        //dynamic result = jsonDecode(response.body);
         return true;
       }
     } catch (e) {
       log(e.toString());
     }
     return false;
+  }
+
+  Future<List<CleanupItem>> getCleanupList(String gardenId, String field) async {
+    try {
+      final url = Uri.parse('${ApiConstants.baseUrl}/garden/$gardenId/cleanup/$field');
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        return cleanupItemsFromJson(response.body);
+      }
+    } catch (e) {
+      log(e.toString());
+    }
+    return [];
+  }
+
+  Future<bool> renameCleanupValue(
+      String gardenId, String field, String from, String to) async {
+    try {
+      final url = Uri.parse(
+          '${ApiConstants.baseUrl}/garden/$gardenId/cleanup/rename');
+      final response = await http.post(url,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'field': field, 'from': from, 'to': to}));
+      return response.statusCode == 200;
+    } catch (e) {
+      log(e.toString());
+    }
+    return false;
+  }
+
+  Future<bool> deleteCleanupValue(
+      String gardenId, String field, String value,
+      {String action = 'clear', String with_ = ''}) async {
+    try {
+      final url = Uri.parse(
+          '${ApiConstants.baseUrl}/garden/$gardenId/cleanup/value');
+      final request = http.Request('DELETE', url);
+      request.headers['Content-Type'] = 'application/json';
+      request.body =
+          jsonEncode({'field': field, 'value': value, 'action': action, 'with': with_});
+      final streamed = await request.send();
+      return streamed.statusCode == 200;
+    } catch (e) {
+      log(e.toString());
+    }
+    return false;
+  }
+
+  Future<List<LegumeReference>> getLegumesReference() async {
+    try {
+      final url =
+          Uri.parse('${ApiConstants.baseUrl}/legumes/reference');
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        return legumeReferencesFromJson(response.body);
+      }
+    } catch (e) {
+      log(e.toString());
+    }
+    return [];
   }
 }

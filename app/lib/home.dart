@@ -5,6 +5,7 @@
 // ignore_for_file: prefer_const_constructors
 
 import 'package:app/action_log.dart';
+import 'package:app/cleanup_view.dart';
 import 'package:app/garden_model.dart';
 import 'package:app/gardens_view.dart';
 import 'package:app/meteo_service.dart';
@@ -266,7 +267,8 @@ Future<void> _onRefresh() async {
       bottomNavigationBar: NavigationBar(
         destinations: const [
           NavigationDestination(icon: Icon(Icons.home), label: "Home"),
-          NavigationDestination(icon: Icon(Icons.add_chart), label: "Récoltes")
+          NavigationDestination(icon: Icon(Icons.add_chart), label: "Récoltes"),
+          NavigationDestination(icon: Icon(Icons.tune), label: "Données"),
         ],
         onDestinationSelected: (int i) {
           setState(() {
@@ -331,7 +333,7 @@ Future<void> _onRefresh() async {
                                   .where((m) => m.date == a.dateAction)
                                   .firstOrNull;
                               LuneDay? luneDay = luneData
-                                  .where((l) => l.date == a.dateAction)
+                                  .where ((l) => l.date == a.dateAction)
                                   .firstOrNull;
                               final isToday = a.dateAction.sameDayAs(DateTime.now());
                               results.add(DaySeparator(
@@ -372,7 +374,9 @@ Future<void> _onRefresh() async {
                 )
               : currentPage == 1
                   ? ActionLogStats()
-                  : Container(),
+                  : selectedGarden != null
+                      ? CleanupView(garden: selectedGarden!)
+                      : Center(child: Text('Sélectionnez un jardin')),
       floatingActionButton: (currentPage == 0 && selectedGarden != null)
           ? Column(
               mainAxisSize: MainAxisSize.min,

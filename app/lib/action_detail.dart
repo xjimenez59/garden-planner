@@ -372,7 +372,8 @@ class _ActionDetail extends State<ActionDetail> {
             builder: (context) => ListSelector(
                 title: "Choisissez un légume",
                 value: actionLog.legume,
-                getOptions: _getLegumes)));
+                getOptions: _getLegumes,
+                getSecondaryOptions: _getLegumesReference)));
     setState(() {
       if (widget.actionLog.legume != result) {
         actionLog.isModified = true;
@@ -393,7 +394,8 @@ class _ActionDetail extends State<ActionDetail> {
                 title: "Variété de ${actionLog.legume}",
                 value: actionLog.variete,
                 optionsParam: actionLog,
-                getOptions: _getVarietes)));
+                getOptions: _getVarietes,
+                getSecondaryOptions: _getVarietesReference)));
     setState(() {
       if (widget.actionLog.variete != result) {
         actionLog.isModified = true;
@@ -437,6 +439,18 @@ class _ActionDetail extends State<ActionDetail> {
     }
 
     return result;
+  }
+
+  Future<List<String>> _getLegumesReference(dynamic param) async {
+    final refs = await ApiService().getLegumesReference();
+    return refs.map((r) => r.legume).toList();
+  }
+
+  Future<List<String>> _getVarietesReference(dynamic param) async {
+    final refs = await ApiService().getLegumesReference();
+    final legumeName = (param as ActionLog).legume.toLowerCase();
+    final ref = refs.where((r) => r.legume.toLowerCase() == legumeName).firstOrNull;
+    return ref?.varietes ?? [];
   }
 
   Future<List<String>> _getLieux(dynamic param) async {
