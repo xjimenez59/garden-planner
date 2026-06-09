@@ -182,6 +182,7 @@ Future<void> _onRefresh() async {
       _searchResults = [];
       _searchHasMore = false;
       _searchBeforeCursor = null;
+      _searchLoading = false;
       _loadSearchPage(text);
     }
   }
@@ -195,7 +196,10 @@ Future<void> _onRefresh() async {
       limit: 30,
       search: query.withoutDiacriticalMarks,
     );
-    if (!mounted || filterController.text != query) return;
+    if (!mounted || filterController.text != query) {
+      if (mounted) setState(() => _searchLoading = false);
+      return;
+    }
     if (page != null) {
       final newDates = page.logs
         .map((l) => '${l.dateAction.year}-${l.dateAction.month.toString().padLeft(2, '0')}-${l.dateAction.day.toString().padLeft(2, '0')}')
@@ -243,8 +247,6 @@ Future<void> _onRefresh() async {
     final bool isSearching = filterController.text.isNotEmpty;
     final List<ActionLog> displayedLogs = isSearching ? _searchResults : actionLogs;
     final bool isLoadingDisplay = isSearching ? _searchLoading : _loadingMore;
-    DateTime lastDate = DateTime(1965);
-    int lastYear = DateTime.now().year;
 
     // Insérer un en-tête "Aujourd'hui" si aucun log n'existe pour la date du jour
     final todayMidnight = DateTime.now();
@@ -316,11 +318,14 @@ Future<void> _onRefresh() async {
                             List<Widget> results = [];
                             var a = displayedLogs[logIndex];
 
-                            if (!(lastDate.sameDayAs(a.dateAction))) {
-                              lastDate = a.dateAction;
-                              if (a.dateAction.year != lastYear) {
-                                lastYear = a.dateAction.year;
-                                results.add(YearSeparator(year: lastYear));
+                            final prev = logIndex > 0 ? displayedLogs[logIndex - 1] : null;
+                            final isNewDay = prev == null || !prev.dateAction.sameDayAs(a.dateAction);
+                            if (isNewDay) {
+                              final isNewYear = prev == null
+                                  ? a.dateAction.year != DateTime.now().year
+                                  : prev.dateAction.year != a.dateAction.year;
+                              if (isNewYear) {
+                                results.add(YearSeparator(year: a.dateAction.year));
                               }
                               Meteo? meteo = meteoData
                                   .where((m) => m.date == a.dateAction)
@@ -337,10 +342,10 @@ Future<void> _onRefresh() async {
                                   luneData: isToday ? luneData : null));
                             }
                             bool showDivider =
-                                (logIndex == displayedLogs.length - 1) ||
-                                    (displayedLogs[logIndex + 1]
+                                logIndex < displayedLogs.length - 1 &&
+                                    displayedLogs[logIndex + 1]
                                         .dateAction
-                                        .sameDayAs(a.dateAction));
+                                        .sameDayAs(a.dateAction);
                             results.add(Dismissible(
                                 key: Key(a.id),
                                 onDismissed: onTileDismissed(logIndex),
