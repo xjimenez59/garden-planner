@@ -32,10 +32,15 @@ func main() {
 
 	router.GET("/gardens", controllers.GetGardens)
 	router.POST("/garden", controllers.PostGarden)
-	router.DELETE("/garden/:id", controllers.DeleteGarden)
+	router.DELETE("/garden/:gardenId", controllers.DeleteGarden)
 	router.GET("/garden/:gardenId/logs", controllers.GetLogs)
 
 	router.GET("/legumes", controllers.GetLegumes)
+	router.GET("/legumes/reference", controllers.GetLegumesReference)
+
+	router.GET("/garden/:gardenId/cleanup/:field", controllers.GetCleanupList)
+	router.POST("/garden/:gardenId/cleanup/rename", controllers.RenameCleanupValue)
+	router.DELETE("/garden/:gardenId/cleanup/value", controllers.DeleteCleanupValue)
 
 	router.GET("/tags", controllers.GetTags)
 	router.GET("/lieux", controllers.GetLieux)

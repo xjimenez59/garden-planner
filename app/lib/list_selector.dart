@@ -8,6 +8,8 @@ class ListSelector extends StatefulWidget {
   final String value;
   final String title;
   final Future<List<String>> Function(dynamic param) getOptions;
+  // Options secondaires (catalogue de référence) — affichées en gris, dédupliquées
+  final Future<List<String>> Function(dynamic param)? getSecondaryOptions;
   final dynamic optionsParam;
 
   ListSelector(
@@ -15,6 +17,7 @@ class ListSelector extends StatefulWidget {
       required this.title,
       required this.value,
       required this.getOptions,
+      this.getSecondaryOptions,
       this.optionsParam});
 
   @override
@@ -26,7 +29,9 @@ class ListSelector extends StatefulWidget {
 
 class _ListSelector extends State<ListSelector> {
   String editedValue;
-  List<String> optionsList = [];
+  List<String> _allOptions = [];   // liste complète (primaires + secondaires)
+  List<String> optionsList = [];   // liste filtrée affichée
+  Set<String> _primaryValues = {}; // pour la coloration
   Future<List<String>> Function(dynamic param) getOptions;
   TextEditingController editController = TextEditingController();
 
@@ -35,32 +40,64 @@ class _ListSelector extends State<ListSelector> {
   @override
   void initState() {
     editController.text = editedValue;
-    getOptions(widget.optionsParam).then((result) => setState(() {
-          widget.optionsList = result;
-          optionsList = result;
-        }));
+    _loadOptions();
     super.initState();
+  }
+
+  Future<void> _loadOptions() async {
+    final primary = await getOptions(widget.optionsParam);
+    final primarySet = primary.map((s) => s.toLowerCase()).toSet();
+
+    List<String> secondary = [];
+    if (widget.getSecondaryOptions != null) {
+      final raw = await widget.getSecondaryOptions!(widget.optionsParam);
+      // Dédupliquer insensiblement à la casse
+      secondary = raw
+          .where((s) => !primarySet.contains(s.toLowerCase()))
+          .toList();
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _primaryValues = primary.toSet();
+      _allOptions = [...primary, ...secondary];
+      widget.optionsList = _allOptions;
+      optionsList = _allOptions;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final content = Column(children: [
       Expanded(
-          child: ListView.builder(
-              itemCount: optionsList.length,
-              itemBuilder: (context, index) {
-                return DecoratedBox(
-                  decoration: BoxDecoration(
-                      color: (index % 2 == 0) ? Colors.white : Colors.grey[10],
-                      border:
-                          const Border(bottom: BorderSide(color: Colors.grey))),
-                  child: ListTile(
-                    title: Text(optionsList[index]),
-                    onTap: () => optionOnTap(index),
-                    selected: optionsList[index] == editedValue,
-                  ),
-                );
-              })),
+          child: optionsList.isEmpty
+              ? const Center(child: CircularProgressIndicator())
+              : ListView.builder(
+                  itemCount: optionsList.length,
+                  itemBuilder: (context, index) {
+                    final item = optionsList[index];
+                    final isPrimary = _primaryValues.contains(item);
+                    return DecoratedBox(
+                      decoration: BoxDecoration(
+                          color: (index % 2 == 0)
+                              ? Colors.white
+                              : Colors.grey[10],
+                          border: const Border(
+                              bottom: BorderSide(color: Colors.grey))),
+                      child: ListTile(
+                        title: Text(
+                          item,
+                          style: TextStyle(
+                            color: isPrimary
+                                ? Colors.black87
+                                : Colors.grey.shade500,
+                          ),
+                        ),
+                        onTap: () => optionOnTap(index),
+                        selected: item == editedValue,
+                      ),
+                    );
+                  })),
       Container(
           padding: const EdgeInsets.fromLTRB(5, 10, 0, 5),
           alignment: Alignment.bottomLeft,
@@ -85,9 +122,9 @@ class _ListSelector extends State<ListSelector> {
     setState(() {
       editedValue = newValue;
       if (newValue == "" || newValue == widget.value) {
-        optionsList = widget.optionsList;
+        optionsList = _allOptions;
       } else {
-        optionsList = widget.optionsList
+        optionsList = _allOptions
             .where((element) => element.withoutDiacriticalMarks
                 .toLowerCase()
                 .contains(newValue.withoutDiacriticalMarks.toLowerCase()))

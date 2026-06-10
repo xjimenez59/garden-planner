@@ -60,7 +60,7 @@ func DeleteGarden(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	id := c.Param("id")
+	id := c.Param("gardenId")
 
 	if _, err := models.GetGarden(ctx, id); err != nil {
 		c.IndentedJSON(http.StatusNotFound, err.Error())
